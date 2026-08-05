@@ -1,0 +1,23 @@
+# === Основные зависимости ===
+Django==5.2.16
+djangorestframework==3.16.0
+django-filter==25.1
+django-cors-headers==4.7.0
+djangorestframework-simplejwt==5.5.0
+psycopg2-binary==2.9.11
+python-dotenv==1.1.0
+Pillow==11.3.0
+django-simple-history==3.8.0
+sentry-sdk==2.39.0
+openpyxl==3.1.5
+
+# === Для работы с Redis и Celery (пока не используем, но установим) ===
+redis==5.3.0
+celery==5.5.1
+
+# === Dev-зависимости (для разработки) ===
+black==25.1.0
+flake8==7.2.0
+mypy==1.16.0
+pytest==8.3.5
+pytest-django==4.11.1
