@@ -48,6 +48,7 @@ class EmployeeSkillInline(admin.TabularInline):
     model = EmployeeSkill
     extra = 1
     autocomplete_fields = ['skill']
+    verbose_name_plural = 'Навыки сотрудника'
     
 
 @admin.register(Employee)
@@ -61,34 +62,52 @@ class EmployeeAdmin(admin.ModelAdmin):
     ]
     list_filter = [
         'department',
-        'status',
-        'skill'
+        'status'
     ]
     search_fields = [
         'last_name',
         'personal_number'
     ]
+    readonly_fields = [
+        'created_at',
+        'updated_at'
+    ]
     inlines = [EmployeeSkillInline]
     fieldsets = (
-        ('Основная информация', {
-            'fields': ('user', 
-                       'short_name_display',
-                       'personal_number',
-                       'department',
-                       'position',
-                       'status')
+        ('Персональные данные', {
+            'fields': (
+                'user', 
+                'last_name',
+                'first_name',
+                'patronymic',
+            )
         }),
         ('Контакты', {
             'fields': (
                 'phone',
-                'email')
+                'email'
+            ),
+            'classes': ('collapse',)
+        }),
+        ('Данные о сотруднике', {
+            'fields': (
+                'personal_number', 
+                (
+                    'department',
+                    'position'
+                ),
+                (
+                    'hire_date',
+                    'status',
+                ),
+            )
         }),
         ('Метаданные', {
             'fields': ('created_at', 'updated_at'),
-            'classes': ('collapse')
-        })
+            'classes': ('collapse',)
+        }),
     )
     
     def short_name_display(self, obj):
-        return obj.short_name
+        return obj.short_name()
     short_name_display.short_description = 'ФИО'

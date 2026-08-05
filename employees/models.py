@@ -25,6 +25,13 @@ class Department(models.Model):
         related_name='managed_departments',
         verbose_name='Руководитель'
     )
+    comment = models.TextField(
+        blank=True,
+        verbose_name='Описание',
+        help_text='Чем занимается участок, особенности'
+    )
+    
+    # Метаданные
     created_at = models.DateTimeField(
         auto_now_add=True,
         verbose_name='Дата создания'
@@ -122,7 +129,9 @@ class Employee(models.Model):
     )
     department = models.ForeignKey(
         Department,
-        on_delete=models.PROTECT,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
         related_name='employees',
         verbose_name='Участок'
     )
@@ -158,6 +167,8 @@ class Employee(models.Model):
     skill = models.ManyToManyField(
         Skill,
         through = 'EmployeeSkill',
+        null=True,
+        blank=True,
         related_name='employees',
         verbose_name='Навыки'
     )
@@ -196,7 +207,7 @@ class EmployeeSkill(models.Model):
     )
     skill = models.ForeignKey(
         Skill,
-        on_delete=models.CASCADE
+        on_delete=models.CASCADE,
     )
     level = models.PositiveSmallIntegerField(
         default=1,
