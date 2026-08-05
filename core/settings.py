@@ -28,7 +28,8 @@ INSTALLED_APPS = [
     'corsheaders',
     
     # Свои
-    'users'
+    'users',
+    'employees',
 ]
 
 # ---- Промежуточный слой -----
@@ -115,3 +116,10 @@ REST_FRAMEWORK = {
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ),
 }
+
+# Celery Configuration (Заглушка, чтобы приложение запускалось)
+CELERY_BROKER_URL = os.getenv('REEDIS_URL', 'redis://localhost:6379/0')
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_BACKEND = os.getenv('REDIS_URL', 'redis://localhost:6379/0')
+
