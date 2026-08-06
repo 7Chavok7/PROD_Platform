@@ -1,6 +1,7 @@
 # .employees/models.py | A.Grachev
 from django.db import models
 from django.contrib.auth import get_user_model
+from simple_history.models import HistoricalRecords
 
 
 User = get_user_model()
@@ -41,6 +42,12 @@ class Department(models.Model):
         verbose_name='Дата редактирования'
     )
     
+    # История изменений
+    history = HistoricalRecords(
+        inherit=True,
+        verbose_name='История изменений'
+    )
+    
     class Meta:
         verbose_name = 'Участок'
         verbose_name_plural = 'Участки'
@@ -62,6 +69,12 @@ class Skill(models.Model):
         verbose_name='Категория'
     )
     
+    # История изменений
+    history = HistoricalRecords(
+        inherit=True,
+        verbose_name='История изменений'
+    )
+        
     class Meta:
         verbose_name = 'Навык'
         verbose_name_plural = 'Навыки'
@@ -83,6 +96,12 @@ class Position(models.Model):
         help_text='Максимум 6 символов. Например ОС-001'
     )
     
+    # История изменений
+    history = HistoricalRecords(
+        inherit=True,
+        verbose_name='История изменений'
+    )
+        
     class Meta:
         verbose_name = 'Должность'
         verbose_name_plural = 'Должности'
@@ -167,7 +186,6 @@ class Employee(models.Model):
     skill = models.ManyToManyField(
         Skill,
         through = 'EmployeeSkill',
-        null=True,
         blank=True,
         related_name='employees',
         verbose_name='Навыки'
@@ -181,6 +199,12 @@ class Employee(models.Model):
     updated_at = models.DateTimeField(
         auto_now=True,
         verbose_name='Дата редактирования'
+    )
+    
+    # История изменений
+    history = HistoricalRecords(
+        inherit=True,
+        verbose_name='История изменений'
     )
     
     class Meta:

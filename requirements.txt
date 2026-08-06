@@ -11,6 +11,9 @@ django-simple-history==3.8.0
 sentry-sdk==2.39.0
 openpyxl==3.1.5
 
+# === Для аудита изменений ===
+django-simple-history==3.8.0
+
 # === Для работы с Redis и Celery (пока не используем, но установим) ===
 redis==5.3.0
 celery==5.5.1

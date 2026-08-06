@@ -1,5 +1,6 @@
 # .employee/admin.py | A.Grachev
 from django.contrib import admin
+from simple_history.admin import SimpleHistoryAdmin
 from .models import (
     Department,
     Employee,
@@ -10,7 +11,7 @@ from .models import (
 
 
 @admin.register(Department)
-class DepartmentAdmin(admin.ModelAdmin):
+class DepartmentAdmin(SimpleHistoryAdmin):
     list_display = [
         'name',
         'code',
@@ -23,7 +24,7 @@ class DepartmentAdmin(admin.ModelAdmin):
 
     
 @admin.register(Skill)
-class SkillAdmin(admin.ModelAdmin):
+class SkillAdmin(SimpleHistoryAdmin):
     list_display = [
         'name',
         'category'
@@ -34,7 +35,7 @@ class SkillAdmin(admin.ModelAdmin):
     
 
 @admin.register(Position)
-class PositionAdmin(admin.ModelAdmin):
+class PositionAdmin(SimpleHistoryAdmin):
     list_display = [
         'name',
         'code'
@@ -52,7 +53,7 @@ class EmployeeSkillInline(admin.TabularInline):
     
 
 @admin.register(Employee)
-class EmployeeAdmin(admin.ModelAdmin):
+class EmployeeAdmin(SimpleHistoryAdmin):
     list_display = [
         'short_name_display',
         'personal_number',
