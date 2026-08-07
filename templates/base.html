@@ -92,6 +92,9 @@
                            href="{% url 'employees:position_list' %}">
                             <i class="fas fa-briefcase me-2"></i> Должности
                         </a>
+                        <a class="nav-link {% if active_menu == 'skill_matrix' %}active{% endif %}" href="{% url 'employees:skill_matrix' %}">
+                            <i class="fas fa-th me-2"></i> Матрица квалификаций
+                        </a>
                     </nav>
                 </div>
             </div>

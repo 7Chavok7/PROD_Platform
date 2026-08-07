@@ -310,19 +310,49 @@
                                 </div>
                             </div>
 
-                            <!-- Навыки -->
+                            <!-- ============================================================ -->
+                            <!-- БЛОК: НАВЫКИ С УРОВНЕМ                                        -->
+                            <!-- ============================================================ -->
                             <div class="row g-3 align-items-start mb-2">
                                 <div class="col-md-3">
-                                    <label class="form-label fw-bold mb-0" for="{{ form.skill.id_for_label }}">
-                                        {{ form.skill.label }}
-                                    </label>
+                                    <label class="form-label fw-bold mb-0">Навыки</label>
                                 </div>
                                 <div class="col-md-9">
-                                    {{ form.skill }}
-                                    {% if form.skill.errors %}
-                                        <div class="text-danger small mt-1">{{ form.skill.errors }}</div>
-                                    {% endif %}
-                                    <small class="text-muted">Удерживайте Ctrl (или Cmd) для выбора нескольких навыков</small>
+                                    <div id="skills-container">
+                                        {% for skill in employee.employeeskill_set.all %}
+                                        <div class="row g-2 mb-2 skill-row">
+                                            <div class="col-md-8">
+                                                <select name="skill_{{ forloop.counter0 }}_id" class="form-select form-select-sm">
+                                                    <option value="">---</option>
+                                                    {% for s in skills %}
+                                                    <option value="{{ s.pk }}" {% if s.pk == skill.skill.pk %}selected{% endif %}>
+                                                        {{ s.name }}
+                                                    </option>
+                                                    {% endfor %}
+                                                </select>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <select name="skill_{{ forloop.counter0 }}_level" class="form-select form-select-sm">
+                                                    {% for i in "12345" %}
+                                                    <option value="{{ i }}" {% if i|add:0 == skill.level %}selected{% endif %}>
+                                                        {{ i }}
+                                                    </option>
+                                                    {% endfor %}
+                                                </select>
+                                            </div>
+                                            <div class="col-md-1">
+                                                <button type="button" class="btn btn-sm btn-outline-danger remove-skill">
+                                                    <i class="fas fa-times"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                        {% empty %}
+                                        <p class="text-muted small">Навыки не добавлены</p>
+                                        {% endfor %}
+                                    </div>
+                                    <button type="button" class="btn btn-sm btn-outline-primary mt-2" id="add-skill-btn">
+                                        <i class="fas fa-plus me-1"></i>Добавить навык
+                                    </button>
                                 </div>
                             </div>
                         </div>

@@ -29,4 +29,7 @@ urlpatterns = [
     path('positions/create/', views.position_create, name='position_create'),
     path('positions/<int:pk>/edit/', views.position_edit, name='position_edit'),
     path('positions/<int:pk>/delete/', views.position_delete, name='position_delete'),
+    
+    # Матрица квалификаций
+    path('skill-matrix', views.skill_matrix, name='skill_matrix'),    
 ]

@@ -1,0 +1,160 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load custom_filters %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block breadcrumb_items %}
+<li class="breadcrumb-item active">{{ title }}</li>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1><i class="fas fa-th text-primary me-2"></i>{{ title }}</h1>
+    <div>
+        <a href="{% url 'employees:skill_list' %}" class="btn btn-outline-secondary btn-sm">
+            <i class="fas fa-edit me-1"></i>Управление навыками
+        </a>
+        <a href="{% url 'employees:employee_list' %}" class="btn btn-outline-secondary btn-sm">
+            <i class="fas fa-users me-1"></i>Сотрудники
+        </a>
+    </div>
+</div>
+
+<!-- КАРТОЧКА-ПОДСКАЗКА -->
+<div class="card bg-light mb-4">
+    <div class="card-body py-2">
+        <small class="text-muted">
+            <i class="fas fa-info-circle me-1"></i>
+            В таблице показаны уровни владения навыками (1–5).
+            Пустая ячейка означает, что сотрудник не владеет навыком.
+        </small>
+    </div>
+</div>
+
+<!-- МАТРИЦА -->
+<div class="card">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover table-bordered mb-0" style="font-size: 0.9rem;">
+                <thead class="table-light">
+                    <tr>
+                        <th class="text-center" style="min-width: 180px; position: sticky; left: 0; background: #f8f9fa; z-index: 2;">
+                            <i class="fas fa-user me-1"></i>Сотрудник
+                        </th>
+                        <th class="text-center" style="min-width: 120px;">Участок</th>
+                        {% for skill in skills %}
+                        <th class="text-center" style="min-width: 80px; font-weight: 500;" title="{{ skill.name }}">
+                            {{ skill.name|truncatechars:12 }}
+                        </th>
+                        {% empty %}
+                        <th class="text-center text-muted">Нет навыков</th>
+                        {% endfor %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in matrix %}
+                    {% if not row.employee.user.is_superuser %}
+                    <tr>
+                        <!-- ФИО сотрудника (фиксированная колонка) -->
+                        <td style="position: sticky; left: 0; background: white; z-index: 1; border-right: 2px solid #dee2e6;">
+                            <div class="d-flex align-items-center">
+                                <span class="fw-medium">
+                                    <a href="{% url 'employees:employee_detail' row.employee.pk %}" class="text-decoration-none">
+                                        {{ row.employee.short_name }}
+                                    </a>
+                                </span>
+                                <span class="badge-status {{ row.employee.status }} ms-2" style="font-size: 0.65rem;">
+                                    {{ row.employee.get_status_display }}
+                                </span>
+                            </div>
+                        </td>
+                        <!-- Участок -->
+                        <td class="text-center">
+                            <span class="small">{{ row.employee.department|default:'—' }}</span>
+                        </td>
+                        
+                        <!-- Навыки -->
+                        {% for skill in skills %}
+                        <td class="text-center align-middle">
+                            {% with level=row.levels|get_item:skill.id %}
+                                {% if level %}
+                                    <span class="badge {% if level >= 4 %}bg-success{% elif level >= 3 %}bg-primary{% elif level >= 2 %}bg-warning text-dark{% else %}bg-secondary{% endif %}" 
+                                          style="font-size: 0.85rem; min-width: 28px; padding: 4px 8px;"
+                                          title="Уровень {{ level }} из 5">
+                                        {{ level }}
+                                    </span>
+                                {% else %}
+                                    <span class="text-muted" style="font-size: 0.7rem;">—</span>
+                                {% endif %}
+                            {% endwith %}
+                        </td>
+                        {% empty %}
+                        <td class="text-center text-muted">Нет навыков</td>
+                        {% endfor %}
+                    </tr>
+                    {% endif %}
+                    {% empty %}
+                    <tr>
+                        <td colspan="{{ skills|length|add:2 }}" class="text-center py-4 text-muted">
+                            <i class="fas fa-users fa-2x d-block mb-2"></i>
+                            Нет сотрудников
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- СТАТИСТИКА + ФИЛЬТРЫ -->
+<div class="row mt-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-chart-bar me-2"></i>Статистика
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-6">
+                        <small class="text-muted">Всего сотрудников</small>
+                        <h4>{{ matrix|length }}</h4>
+                    </div>
+                    <div class="col-6">
+                        <small class="text-muted">Всего навыков</small>
+                        <h4>{{ skills|length }}</h4>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-filter me-2"></i>Фильтр
+            </div>
+            <div class="card-body">
+                <div class="row g-2">
+                    <div class="col-md-6">
+                        <input type="text" id="matrixSearch" class="form-control form-control-sm" placeholder="Поиск по ФИО...">
+                    </div>
+                    <div class="col-md-6">
+                        <select id="departmentFilter" class="form-select form-select-sm">
+                            <option value="">Все участки</option>
+                            {% for dept in departments %}
+                                <option value="{{ dept.pk }}">{{ dept.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<!-- СКРИПТ ПОДКЛЮЧАЕТСЯ ИЗ СТАТИКИ -->
+<script src="{% static 'js/skill_matrix.js' %}"></script>
+{% endblock %}

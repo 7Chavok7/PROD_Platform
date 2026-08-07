@@ -88,13 +88,33 @@ def employee_create(request):
         form = EmployeeForm(request.POST)
         if form.is_valid():
             employee = form.save()
+            
+            # Сохраняем навыки с уровнями
+            skills_data = {}
+            for key, value in request.POST.items():
+                if key.startswith('skill_') and key.endswith('_id'):
+                    index = key.split('_')[1]
+                    skill_id = value
+                    level_key = f'skill_{index}_level'
+                    level = request.POST.get(level_key, 1)
+                    if skill_id:
+                        skills_data[int(skill_id)] = int(level)
+            
+            for skill_id, level in skills_data.items():
+                EmployeeSkill.objects.create(
+                    employee=employee,
+                    skill_id=skill_id,
+                    level=level
+                )
+            
             messages.success(request, f'Сотрудник {employee} успешно создан!')
             return redirect('employees:employee_detail', pk=employee.pk)
     else:
         form = EmployeeForm()
-
+    
     context = {
         'form': form,
+        'skills': Skill.objects.all(),
         'title': 'Добавление сотрудника',
         'active_menu': 'employees',
     }
@@ -109,20 +129,42 @@ def employee_edit(request, pk):
     if request.method == 'POST':
         form = EmployeeForm(request.POST, instance=employee)
         if form.is_valid():
-            form.save()
+            employee = form.save()
+            
+            # Удаляем старые навыки
+            employee.employeeskill_set.all().delete()
+            
+            # Сохраняем новые навыки с уровнями
+            skills_data = {}
+            for key, value in request.POST.items():
+                if key.startswith('skill_') and key.endswith('_id'):
+                    index = key.split('_')[1]
+                    skill_id = value
+                    level_key = f'skill_{index}_level'
+                    level = request.POST.get(level_key, 1)
+                    if skill_id:
+                        skills_data[int(skill_id)] = int(level)
+            
+            for skill_id, level in skills_data.items():
+                EmployeeSkill.objects.create(
+                    employee=employee,
+                    skill_id=skill_id,
+                    level=level
+                )
+            
             messages.success(request, f'Сотрудник {employee} успешно обновлён!')
             return redirect('employees:employee_detail', pk=employee.pk)
     else:
         form = EmployeeForm(instance=employee)
-
+    
     context = {
         'form': form,
         'employee': employee,
+        'skills': Skill.objects.all(),
         'title': 'Редактирование сотрудника',
         'active_menu': 'employees',
     }
     return render(request, 'employees/employee_form.html', context)
-
 
 @login_required
 @user_passes_test(is_manager)
@@ -362,3 +404,35 @@ def position_delete(request, pk):
         'title': 'Удаление должности',
     }
     return render(request, 'employees/position_confirm_delete.html', context)
+
+# =========================================================
+# =     МАТРИЦА КВАЛИФИКАЦИЙ                              =
+# =========================================================
+@login_required
+@user_passes_test(is_manager)
+def skill_matrix(request):
+    """Матрица квалификаций: сотрудник х навыки"""
+    employees = Employee.objects.select_related('department').all()
+    skills = Skill.objects.all().order_by('name')
+    departments = Department.objects.all()
+    
+    # Собираем данные для матрицы
+    matrix = []
+    for employee in employees:
+        # Словарь: {skill_is: level}
+        skill_level = {es.skill_id: es.level for es in employee.employeeskill_set.all()}
+        row = {
+            'employee': employee,
+            'levels': skill_level,
+        }
+        matrix.append(row)
+        
+    context = {
+        'matrix': matrix,
+        'skills': skills,
+        'departments': departments,
+        'active_menu': 'skill_matrix',
+        'title': 'Матрица квалификаций'
+    }
+    
+    return render(request, 'employees/skill_matrix.html', context)

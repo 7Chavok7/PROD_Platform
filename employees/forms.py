@@ -39,8 +39,7 @@ class EmployeeForm(forms.ModelForm):
             'status',
             'phone',
             'email',
-            'hire_date',
-            'skill'
+            'hire_date'
         ]
         wedget = {
             'hire_date': forms.DateInput(
@@ -192,6 +191,16 @@ class SkillForm(forms.ModelForm):
             'category': forms.TextInput(
                 attrs={'class': 'form-control'}
             ),
+        }
+        
+        
+class EmployeeSkillForm(forms.ModelForm):
+    class Meta:
+        model = EmployeeSkill
+        fields = ['skill', 'level']
+        widgets = {
+            'skill': forms.Select(attrs={'class': 'form-select'}),
+            'level': forms.Select(attrs={'class': 'form-select'}),
         }
 
 
