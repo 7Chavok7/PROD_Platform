@@ -1,0 +1,160 @@
+<!--templates/base.html-->
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="author" content="A.Grachev/chavoka2inbox.ru">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}PROD Platform{% endblock title %}</title>
+
+    <!-- Bootsrap 5 -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- FontAwesome 6 -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+
+    <!-- Собственные стили -->
+    {% load static %}
+    <link href="{% static 'css/style.css' %}" rel="stylesheet">
+
+    {% block extra_css %}{% endblock extra_css %}
+</head>
+
+<body>
+
+    <!-- НАВИГАЦИЯ (ШАПКА) -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+        <div class="container-fluid">
+            <button class="navbar-toggler border-0 me-2" type="button" id="sidebarToggle">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <a class="navbar-brand" href="{% url "employees:employee_list" %}">
+                <i class="fas fa-industry me-2"></i> ProdPlatform
+            </a>
+
+            <div class="d-flex align-items-center ms-auto">
+                <div class="dropdown">
+                    <a class="nav-link dropdown-toggle text-light" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown">
+                        <i class="fas fa-user-circle fs-5 me-1"></i>
+                        <span class="d-none d-md-inline">{{ user.get_full_name|default:user.username }}</span>
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <!-- ✅ ПРОВЕРКА: есть ли сотрудник -->
+                        {% if user.employee %}
+                            <li><a class="dropdown-item" href="{% url 'employees:employee_detail' user.employee.pk %}">
+                                <i class="fas fa-id-card me-2"></i> Мой профиль
+                            </a></li>
+                        {% else %}
+                            <li><a class="dropdown-item" href="#">
+                                <i class="fas fa-id-card me-2"></i> Профиль не заполнен
+                            </a></li>
+                        {% endif %}
+                        <li><hr class="dropdown-divider"></li>
+                        <li>
+                            <form method="post" action="{% url 'logout' %}">
+                                {% csrf_token %}
+                                <button type="submit" class="dropdown-item text-danger">
+                                    <i class="fas fa-sign-out-alt me-2"></i> Выйти
+                                </button>
+                            </form>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+     <!-- ============================================================ -->
+    <!-- БОКОВОЕ МЕНЮ (САЙДБАР)                                        -->
+    <!-- ============================================================ -->
+    <aside class="sidebar" id="sidebar">
+        <nav class="nav flex-column">
+            
+            <!-- ГРУППА: СПРАВОЧНИКИ -->
+            <div class="nav-item">
+                <a class="nav-link dropdown-toggle" href="#" id="referenceMenu" role="button" data-bs-toggle="collapse" data-bs-target="#referenceSubmenu" aria-expanded="true">
+                    <i class="fas fa-book me-2"></i> Справочники
+                </a>
+                <div class="collapse show" id="referenceSubmenu">
+                    <nav class="nav flex-column ps-3">
+                        <a class="nav-link {% if active_menu == 'employees' %}active{% endif %}"
+                           href="{% url 'employees:employee_list' %}">
+                            <i class="fas fa-users me-2"></i> Сотрудники
+                        </a>
+                        <a class="nav-link {% if active_menu == 'departments' %}active{% endif %}"
+                           href="{% url 'employees:department_list' %}">
+                            <i class="fas fa-building me-2"></i> Участки
+                        </a>
+                        <a class="nav-link {% if active_menu == 'skills' %}active{% endif %}"
+                           href="{% url 'employees:skill_list' %}">
+                            <i class="fas fa-star me-2"></i> Навыки
+                        </a>
+                        <a class="nav-link {% if active_menu == 'positions' %}active{% endif %}"
+                           href="{% url 'employees:position_list' %}">
+                            <i class="fas fa-briefcase me-2"></i> Должности
+                        </a>
+                    </nav>
+                </div>
+            </div>
+
+            <!-- ГРУППА: ЗАКАЗЫ (в будущем) -->
+            <!--
+            <div class="nav-item">
+                <a class="nav-link" href="#">
+                    <i class="fas fa-clipboard-list me-2"></i> Заказы
+                </a>
+            </div>
+            -->
+
+            <!-- ГРУППА: ОТЧЕТЫ (в будущем) -->
+            <!--
+            <div class="nav-item">
+                <a class="nav-link" href="#">
+                    <i class="fas fa-chart-bar me-2"></i> Отчеты
+                </a>
+            </div>
+            -->
+
+            <!-- ГРУППА: АДМИНИСТРИРОВАНИЕ (только для админа) -->
+            {% if user.is_superuser %}
+            <div class="nav-item">
+                <a class="nav-link" href="{% url 'admin:index' %}">
+                    <i class="fas fa-cog me-2"></i> Администрирование
+                </a>
+            </div>
+            {% endif %}
+
+        </nav>
+    </aside>
+    <!-- ОСНОВНОЙ КОНТЕНТ -->
+    <main class="main-content">
+        <!-- ХЛЕБНЫЕ КРОШКИ -->
+        {% block breadcrumbs %}
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'employees:employee_list' %}">Главная</a></li>
+                {% block breadcrumb_items %}{% endblock %}
+            </ol>
+        </nav>
+        {% endblock %}
+
+        <!-- СООБЩЕНИЯ (MESSAGES) -->
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                    <i class="fas fa-{% if message.tags == 'success' %}check-circle{% elif message.tags == 'error' %}exclamation-circle{% else %}info-circle{% endif %} me-2"></i>
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+
+        <!-- КОНТЕНТ СТРАНИЦЫ -->
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- SCRIPTS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{% static 'js/main.js' %}"></script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

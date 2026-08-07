@@ -42,19 +42,16 @@ def sync_user_form_employee(sender, instance, created, **kwargs):
         
 @receiver(post_save, sender=User)
 def create_employee_from_user(sender, instance, created, **kwargs):
-    """
-    Сигнал: при создании нового польщователя - автоматически создаем пустую заготовку Employee (чтобы потом заполнять данные).
-    """
+    """При создании пользователя — создаём анкету сотрудника (только если её нет)"""
     if created:
-        # Проверяем, есть ли уже Employee у этого пользователя
         if not hasattr(instance, 'employee'):
             Employee.objects.create(
                 user=instance,
-                last_name=instance.last_name,
-                first_name=instance.first_name,
-                email=instance.email,
+                last_name=instance.last_name or '',
+                first_name=instance.first_name or '',
+                email=instance.email or '',
                 department=None,
                 position=None,
                 status=Employee.Status.ACTIVE
             )
-    print(f'[Сигнал] Создана пустая анкета для пользователя {instance.username}')
+            print(f"[Сигнал] Создана пустая анкета для пользователя {instance.username}")
