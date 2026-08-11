@@ -1,0 +1,147 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block extra_css %}
+<link href="{% static 'css/orders.css' %}" rel="stylesheet">
+{% endblock %}
+
+{% block breadcrumb_items %}
+<li class="breadcrumb-item active">{{ title }}</li>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1><i class="fas fa-clipboard-list text-primary me-2"></i>{{ title }}</h1>
+    <a href="{% url 'orders:order_create' %}" class="btn btn-primary">
+        <i class="fas fa-plus me-2"></i>Создать заказ
+    </a>
+</div>
+
+<!-- ФИЛЬТРЫ -->
+<div class="card mb-4">
+    <div class="card-body">
+        <div class="row g-3 align-items-end">
+            <div class="col-md-3">
+                <label class="form-label">Статус</label>
+                <select id="statusFilter" class="form-select">
+                    <option value="">Все статусы</option>
+                    {% for status_code, status_label in statuses %}
+                        <option value="{{ status_code }}" {% if request.GET.status == status_code %}selected{% endif %}>
+                            {{ status_label }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Приоритет</label>
+                <select id="priorityFilter" class="form-select">
+                    <option value="">Все приоритеты</option>
+                    <option value="high" {% if request.GET.priority == 'high' %}selected{% endif %}>Высокий</option>
+                    <option value="medium" {% if request.GET.priority == 'medium' %}selected{% endif %}>Средний</option>
+                    <option value="low" {% if request.GET.priority == 'low' %}selected{% endif %}>Низкий</option>
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Поиск</label>
+                <input type="text" id="searchInput" class="form-control" placeholder="Номер, название..." value="{{ request.GET.search }}">
+            </div>
+            <div class="col-md-2">
+                <button type="button" class="btn btn-secondary w-100" id="applyFilterBtn">
+                    <i class="fas fa-search me-2"></i>Найти
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- СПИСОК ЗАКАЗОВ -->
+<div class="row">
+    {% for order in orders %}
+    <div class="col-md-6 col-lg-4">
+        <div class="card order-card mb-3" onclick="window.location.href='{% url 'orders:order_detail' order.pk %}'">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span class="fw-bold">{{ order.number }}</span>
+                <span class="badge badge-status-order {{ order.status }}">
+                    {{ order.get_status_display }}
+                </span>
+            </div>
+            <div class="card-body">
+                <h6 class="card-title">{{ order.name }}</h6>
+                <div class="d-flex justify-content-between align-items-center">
+                    <small class="text-muted">
+                        <i class="fas fa-user me-1"></i>{{ order.customer|default:'—' }}
+                    </small>
+                    <span class="badge badge-priority {{ order.priority }}">
+                        {{ order.get_priority_display }}
+                    </span>
+                </div>
+                <div class="mt-2 small">
+                    <i class="fas fa-calendar me-1"></i>
+                    Сдача: {{ order.planned_completion_date|date:"d.m.Y" }}
+                </div>
+                <div class="mt-2">
+                    <small class="text-muted">
+                        <i class="fas fa-tasks me-1"></i>
+                        {{ order.stages.count }} этапов
+                        <span class="ms-2">
+                            <span class="text-success">{{ order.completed_count }}</span>
+                            / {{ order.stages.count }}
+                        </span>
+                    </small>
+                </div>
+                <div class="mt-2">
+                    <small class="text-muted">
+                        <i class="fas fa-user me-1"></i>
+                        Менеджер: {{ order.responsible_manager.get_full_name|default:order.responsible_manager.username }}
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% empty %}
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body text-center py-5 text-muted">
+                <i class="fas fa-clipboard-list fa-3x d-block mb-3"></i>
+                <h5>Заказов пока нет</h5>
+                <p>Создайте первый заказ, нажав на кнопку выше.</p>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('searchInput');
+    const statusFilter = document.getElementById('statusFilter');
+    const priorityFilter = document.getElementById('priorityFilter');
+    const applyBtn = document.getElementById('applyFilterBtn');
+
+    function applyFilter() {
+        const params = new URLSearchParams();
+        const search = searchInput.value.trim();
+        const status = statusFilter.value;
+        const priority = priorityFilter.value;
+
+        if (search) params.append('search', search);
+        if (status) params.append('status', status);
+        if (priority) params.append('priority', priority);
+
+        window.location.href = '{% url "orders:order_list" %}' + '?' + params.toString();
+    }
+
+    applyBtn.addEventListener('click', applyFilter);
+
+    searchInput.addEventListener('keyup', function(e) {
+        if (e.key === 'Enter') {
+            applyFilter();
+        }
+    });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,142 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block breadcrumb_items %}
+<li class="breadcrumb-item"><a href="{% url 'orders:order_list' %}">Заказы</a></li>
+<li class="breadcrumb-item"><a href="{% url 'orders:order_detail' stage.order.pk %}">{{ stage.order.number }}</a></li>
+<li class="breadcrumb-item active">{{ stage }}</li>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-start mb-4">
+    <div>
+        <h1>{{ stage }}</h1>
+        <div class="d-flex gap-2 align-items-center flex-wrap">
+            <span class="badge bg-{% if stage.status == 'pending' %}secondary{% elif stage.status == 'assigned' %}primary{% elif stage.status == 'in_progress' %}info{% elif stage.status == 'completed' %}success{% elif stage.status == 'defect' %}danger{% elif stage.status == 'problem' %}warning{% else %}light{% endif %}" style="font-size: 1rem;">
+                {{ stage.get_status_display }}
+            </span>
+            <span class="text-muted small">
+                <i class="fas fa-clipboard-list me-1"></i>
+                <a href="{% url 'orders:order_detail' stage.order.pk %}" class="text-decoration-none">
+                    {{ stage.order.number }}
+                </a>
+            </span>
+        </div>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="{% url 'orders:stage_edit' stage.order.pk stage.pk %}" class="btn btn-outline-primary btn-sm">
+            <i class="fas fa-edit me-1"></i>Редактировать
+        </a>
+        <a href="{% url 'orders:stage_delete' stage.order.pk stage.pk %}" class="btn btn-outline-danger btn-sm">
+            <i class="fas fa-trash me-1"></i>Удалить
+        </a>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-info-circle me-2"></i>Информация о этапе
+            </div>
+            <div class="card-body">
+                <table class="table table-borderless">
+                    <tr>
+                        <th style="width: 30%;">Заказ</th>
+                        <td>
+                            <a href="{% url 'orders:order_detail' stage.order.pk %}">
+                                {{ stage.order.number }} — {{ stage.order.name }}
+                            </a>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>Участок</th>
+                        <td>{{ stage.department|default:'—' }}</td>
+                    </tr>
+                    <tr>
+                        <th>Требуемый навык</th>
+                        <td>{{ stage.required_skill|default:'—' }}</td>
+                    </tr>
+                    <tr>
+                        <th>Назначенный сотрудник</th>
+                        <td>
+                            {% if stage.assigned_employee %}
+                                <a href="{% url 'employees:employee_detail' stage.assigned_employee.pk %}">
+                                    {{ stage.assigned_employee }}
+                                </a>
+                            {% else %}
+                                <span class="text-muted">—</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>Плановые часы</th>
+                        <td>{{ stage.planned_hours|default:'—' }}</td>
+                    </tr>
+                    <tr>
+                        <th>Фактические часы</th>
+                        <td>{{ stage.actual_hours|default:'—' }}</td>
+                    </tr>
+                    <tr>
+                        <th>Плановая дата начала</th>
+                        <td>{{ stage.planned_start_date|date:"d.m.Y"|default:'—' }}</td>
+                    </tr>
+                    <tr>
+                        <th>Плановая дата завершения</th>
+                        <td>{{ stage.planned_finish_date|date:"d.m.Y"|default:'—' }}</td>
+                    </tr>
+                    <tr>
+                        <th>Фактическая дата начала</th>
+                        <td>{{ stage.actual_start_date|date:"d.m.Y"|default:'—' }}</td>
+                    </tr>
+                    <tr>
+                        <th>Фактическая дата завершения</th>
+                        <td>{{ stage.actual_finish_date|date:"d.m.Y"|default:'—' }}</td>
+                    </tr>
+                    <tr>
+                        <th>Статус</th>
+                        <td>
+                            <span class="badge bg-{% if stage.status == 'pending' %}secondary{% elif stage.status == 'assigned' %}primary{% elif stage.status == 'in_progress' %}info{% elif stage.status == 'completed' %}success{% elif stage.status == 'defect' %}danger{% elif stage.status == 'problem' %}warning{% else %}light{% endif %}">
+                                {{ stage.get_status_display }}
+                            </span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>Комментарий</th>
+                        <td>{{ stage.comment|default:'—' }}</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-paperclip me-2"></i>Чертежи
+            </div>
+            <div class="card-body">
+                {% for drawing in stage.files.all %}
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <div>
+                        <i class="fas fa-file me-1"></i>
+                        <a href="{{ drawing.file.url }}" target="_blank" class="text-decoration-none">{{ drawing.name }}</a>
+                        <br>
+                        <small class="text-muted">v{{ drawing.version }}</small>
+                    </div>
+                    <span class="text-muted small">
+                        <i class="fas fa-user me-1"></i>{{ drawing.uploaded_by.username }}
+                    </span>
+                </div>
+                {% empty %}
+                <p class="text-muted small">Чертежи не загружены</p>
+                {% endfor %}
+                <button class="btn btn-sm btn-outline-secondary w-100 mt-2">
+                    <i class="fas fa-upload me-1"></i>Загрузить чертеж
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

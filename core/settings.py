@@ -29,8 +29,11 @@ INSTALLED_APPS = [
     'simple_history',
     
     # Свои
+    'core_app',
     'users',
     'employees',
+    'customers',
+    'orders',
 ]
 
 # ---- Промежуточный слой -----

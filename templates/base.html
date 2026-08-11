@@ -38,7 +38,6 @@
                         <span class="d-none d-md-inline">{{ user.get_full_name|default:user.username }}</span>
                     </a>
                     <ul class="dropdown-menu dropdown-menu-end">
-                        <!-- ✅ ПРОВЕРКА: есть ли сотрудник -->
                         {% if user.employee %}
                             <li><a class="dropdown-item" href="{% url 'employees:employee_detail' user.employee.pk %}">
                                 <i class="fas fa-id-card me-2"></i> Мой профиль
@@ -63,18 +62,20 @@
         </div>
     </nav>
 
-     <!-- ============================================================ -->
+    <!-- ============================================================ -->
     <!-- БОКОВОЕ МЕНЮ (САЙДБАР)                                        -->
     <!-- ============================================================ -->
     <aside class="sidebar" id="sidebar">
         <nav class="nav flex-column">
-            
-            <!-- ГРУППА: СПРАВОЧНИКИ -->
+
+            <!-- ========================================================== -->
+            <!-- ГРУППА: СПРАВОЧНИКИ                                        -->
+            <!-- ========================================================== -->
             <div class="nav-item">
                 <a class="nav-link dropdown-toggle" href="#" id="referenceMenu" role="button" data-bs-toggle="collapse" data-bs-target="#referenceSubmenu" aria-expanded="true">
                     <i class="fas fa-book me-2"></i> Справочники
                 </a>
-                <div class="collapse show" id="referenceSubmenu">
+                <div class="collapse" id="referenceSubmenu">
                     <nav class="nav flex-column ps-3">
                         <a class="nav-link {% if active_menu == 'employees' %}active{% endif %}"
                            href="{% url 'employees:employee_list' %}">
@@ -92,23 +93,37 @@
                            href="{% url 'employees:position_list' %}">
                             <i class="fas fa-briefcase me-2"></i> Должности
                         </a>
-                        <a class="nav-link {% if active_menu == 'skill_matrix' %}active{% endif %}" href="{% url 'employees:skill_matrix' %}">
+                        <a class="nav-link {% if active_menu == 'skill_matrix' %}active{% endif %}"
+                           href="{% url 'employees:skill_matrix' %}">
                             <i class="fas fa-th me-2"></i> Матрица квалификаций
                         </a>
                     </nav>
                 </div>
             </div>
 
-            <!-- ГРУППА: ЗАКАЗЫ (в будущем) -->
-            <!--
+            <!-- ========================================================== -->
+            <!-- ГРУППА: КОНТРАГЕНТЫ                                         -->
+            <!-- ========================================================== -->
             <div class="nav-item">
-                <a class="nav-link" href="#">
+                <a class="nav-link {% if active_menu == 'customers' %}active{% endif %}"
+                   href="{% url 'customers:customer_list' %}">
+                    <i class="fas fa-handshake me-2"></i> Контрагенты
+                </a>
+            </div>
+
+            <!-- ========================================================== -->
+            <!-- ГРУППА: ЗАКАЗЫ                                             -->
+            <!-- ========================================================== -->
+            <div class="nav-item">
+                <a class="nav-link {% if active_menu == 'orders' %}active{% endif %}"
+                   href="{% url 'orders:order_list' %}">
                     <i class="fas fa-clipboard-list me-2"></i> Заказы
                 </a>
             </div>
-            -->
 
-            <!-- ГРУППА: ОТЧЕТЫ (в будущем) -->
+            <!-- ========================================================== -->
+            <!-- ГРУППА: ОТЧЕТЫ (в будущем)                                 -->
+            <!-- ========================================================== -->
             <!--
             <div class="nav-item">
                 <a class="nav-link" href="#">
@@ -117,7 +132,9 @@
             </div>
             -->
 
-            <!-- ГРУППА: АДМИНИСТРИРОВАНИЕ (только для админа) -->
+            <!-- ========================================================== -->
+            <!-- ГРУППА: АДМИНИСТРИРОВАНИЕ (только для админа)              -->
+            <!-- ========================================================== -->
             {% if user.is_superuser %}
             <div class="nav-item">
                 <a class="nav-link" href="{% url 'admin:index' %}">
@@ -128,7 +145,10 @@
 
         </nav>
     </aside>
-    <!-- ОСНОВНОЙ КОНТЕНТ -->
+
+    <!-- ============================================================ -->
+    <!-- ОСНОВНОЙ КОНТЕНТ                                              -->
+    <!-- ============================================================ -->
     <main class="main-content">
         <!-- ХЛЕБНЫЕ КРОШКИ -->
         {% block breadcrumbs %}
@@ -155,7 +175,9 @@
         {% block content %}{% endblock %}
     </main>
 
-    <!-- SCRIPTS -->
+    <!-- ============================================================ -->
+    <!-- SCRIPTS                                                       -->
+    <!-- ============================================================ -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="{% static 'js/main.js' %}"></script>
     {% block extra_js %}{% endblock %}

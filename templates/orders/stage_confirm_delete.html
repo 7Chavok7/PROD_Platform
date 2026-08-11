@@ -1,0 +1,59 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block breadcrumb_items %}
+<li class="breadcrumb-item"><a href="{% url 'orders:order_list' %}">Заказы</a></li>
+<li class="breadcrumb-item"><a href="{% url 'orders:order_detail' order.pk %}">{{ order.number }}</a></li>
+<li class="breadcrumb-item active">{{ title }}</li>
+{% endblock %}
+
+{% block content %}
+<div class="card border-danger">
+    <div class="card-header bg-danger text-white">
+        <h4 class="mb-0"><i class="fas fa-exclamation-triangle me-2"></i>{{ title }}</h4>
+    </div>
+    <div class="card-body">
+        <p class="fs-5">
+            Вы уверены, что хотите удалить этап <strong>{{ stage.name }}</strong>?
+        </p>
+        <p class="text-muted">
+            Это действие <strong>необратимо</strong>. Все данные этапа будут удалены.
+        </p>
+
+        <div class="card bg-light mt-3">
+            <div class="card-body">
+                <table class="table table-borderless mb-0">
+                    <tr>
+                        <th style="width: 30%;">Заказ</th>
+                        <td>{{ stage.order.number }} — {{ stage.order.name }}</td>
+                    </tr>
+                    <tr>
+                        <th>Участок</th>
+                        <td>{{ stage.department|default:'—' }}</td>
+                    </tr>
+                    <tr>
+                        <th>Назначенный сотрудник</th>
+                        <td>{{ stage.assigned_employee|default:'—' }}</td>
+                    </tr>
+                    <tr>
+                        <th>Статус</th>
+                        <td>{{ stage.get_status_display }}</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+
+        <form method="post" class="mt-4">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-danger">
+                <i class="fas fa-trash me-2"></i>Удалить этап
+            </button>
+            <a href="{% url 'orders:order_detail' order.pk %}" class="btn btn-secondary">
+                <i class="fas fa-times me-2"></i>Отмена
+            </a>
+        </form>
+    </div>
+</div>
+{% endblock %}

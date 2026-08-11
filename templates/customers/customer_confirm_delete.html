@@ -1,0 +1,54 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block breadcrumb_items %}
+<li class="breadcrumb-item"><a href="{% url 'customers:customer_list' %}">Контрагенты</a></li>
+<li class="breadcrumb-item active">{{ title }}</li>
+{% endblock %}
+
+{% block content %}
+<div class="card border-danger">
+    <div class="card-header bg-danger text-white">
+        <h4 class="mb-0"><i class="fas fa-exclamation-triangle me-2"></i>{{ title }}</h4>
+    </div>
+    <div class="card-body">
+        <p class="fs-5">
+            Вы уверены, что хотите удалить контрагента <strong>{{ customer.name }}</strong>?
+        </p>
+        <p class="text-muted">
+            Это действие <strong>необратимо</strong>. Все данные контрагента будут удалены.
+        </p>
+
+        <div class="card bg-light mt-3">
+            <div class="card-body">
+                <table class="table table-borderless mb-0">
+                    <tr>
+                        <th style="width: 30%;">ИНН</th>
+                        <td>{{ customer.inn|default:'—' }}</td>
+                    </tr>
+                    <tr>
+                        <th>Контактное лицо</th>
+                        <td>{{ customer.contact_person|default:'—' }}</td>
+                    </tr>
+                    <tr>
+                        <th>Телефон</th>
+                        <td>{{ customer.phone|default:'—' }}</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+
+        <form method="post" class="mt-4">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-danger">
+                <i class="fas fa-trash me-2"></i>Удалить контрагента
+            </button>
+            <a href="{% url 'customers:customer_detail' customer.pk %}" class="btn btn-secondary">
+                <i class="fas fa-times me-2"></i>Отмена
+            </a>
+        </form>
+    </div>
+</div>
+{% endblock %}

@@ -35,7 +35,9 @@ def is_manager(user):
 @user_passes_test(is_manager)
 def employee_list(request):
     """Список сотрудников с фильтром"""
-    employees = Employee.objects.select_related('department', 'position').all()
+    employees = Employee.objects.select_related('department', 'position').exclude(
+        user__is_superuser=True
+    ).all()
     departments = Department.objects.all()
     
     # Фильтр по участку

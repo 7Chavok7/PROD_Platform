@@ -1,0 +1,122 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block breadcrumb_items %}
+<li class="breadcrumb-item"><a href="{% url 'orders:order_list' %}">Заказы</a></li>
+<li class="breadcrumb-item active">{{ title }}</li>
+{% endblock %}
+
+{% block content %}
+<div class="card shadow">
+    <div class="card-header bg-primary text-white">
+        <h4 class="mb-0"><i class="fas fa-clipboard-list me-2"></i>{{ title }}</h4>
+    </div>
+    <div class="card-body">
+        <form method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+
+            <div class="row g-3">
+                <!-- НАЗВАНИЕ ПРОЕКТА -->
+                <div class="col-md-12">
+                    <label class="form-label required-field" for="{{ form.name.id_for_label }}">
+                        {{ form.name.label }}
+                    </label>
+                    {{ form.name }}
+                    {% if form.name.errors %}
+                        <div class="text-danger small mt-1">{{ form.name.errors }}</div>
+                    {% endif %}
+                </div>
+
+                <!-- ЗАКАЗЧИК -->
+                <div class="col-md-6">
+                    <label class="form-label required-field" for="{{ form.customer.id_for_label }}">
+                        {{ form.customer.label }}
+                    </label>
+                    {{ form.customer }}
+                    {% if form.customer.errors %}
+                        <div class="text-danger small mt-1">{{ form.customer.errors }}</div>
+                    {% endif %}
+                    <small class="text-muted">
+                        <i class="fas fa-plus-circle me-1"></i>
+                        <a href="{% url 'customers:customer_create' %}" target="_blank">Добавить нового контрагента</a>
+                    </small>
+                </div>
+
+                <!-- СТАТУС -->
+                <div class="col-md-6">
+                    <label class="form-label" for="{{ form.status.id_for_label }}">
+                        {{ form.status.label }}
+                    </label>
+                    {{ form.status }}
+                    {% if form.status.errors %}
+                        <div class="text-danger small mt-1">{{ form.status.errors }}</div>
+                    {% endif %}
+                </div>
+
+                <!-- ПРИОРИТЕТ -->
+                <div class="col-md-6">
+                    <label class="form-label" for="{{ form.priority.id_for_label }}">
+                        {{ form.priority.label }}
+                    </label>
+                    {{ form.priority }}
+                    {% if form.priority.errors %}
+                        <div class="text-danger small mt-1">{{ form.priority.errors }}</div>
+                    {% endif %}
+                </div>
+
+                <!-- ПЛАНОВАЯ ДАТА СДАЧИ -->
+                <div class="col-md-6">
+                    <label class="form-label required-field" for="{{ form.planned_completion_date.id_for_label }}">
+                        {{ form.planned_completion_date.label }}
+                    </label>
+                    {{ form.planned_completion_date }}
+                    {% if form.planned_completion_date.errors %}
+                        <div class="text-danger small mt-1">{{ form.planned_completion_date.errors }}</div>
+                    {% endif %}
+                </div>
+
+                <!-- ФАЙЛЫ ЗАКАЗА -->
+                <div class="col-md-12">
+                    <label class="form-label" for="{{ form.order_files.id_for_label }}">
+                        {{ form.order_files.label }}
+                    </label>
+                    {{ form.order_files }}
+                    {% if form.order_files.errors %}
+                        <div class="text-danger small mt-1">{{ form.order_files.errors }}</div>
+                    {% endif %}
+                    <small class="text-muted">Договор, ТЗ, смета и другие файлы (можно выбрать несколько)</small>
+                </div>
+
+                <!-- ОПИСАНИЕ -->
+                <div class="col-12">
+                    <label class="form-label" for="{{ form.description.id_for_label }}">
+                        {{ form.description.label }}
+                    </label>
+                    {{ form.description }}
+                    {% if form.description.errors %}
+                        <div class="text-danger small mt-1">{{ form.description.errors }}</div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- КНОПКИ -->
+            <div class="mt-4">
+                <button type="submit" class="btn btn-success">
+                    <i class="fas fa-save me-2"></i>Сохранить
+                </button>
+                <a href="{% url 'orders:order_list' %}" class="btn btn-secondary">
+                    <i class="fas fa-times me-2"></i>Отмена
+                </a>
+                {% if order %}
+                    <a href="{% url 'orders:order_detail' order.pk %}" class="btn btn-outline-info ms-auto">
+                        <i class="fas fa-arrow-left me-2"></i>Назад к заказу
+                    </a>
+                {% endif %}
+            </div>
+
+        </form>
+    </div>
+</div>
+{% endblock %}

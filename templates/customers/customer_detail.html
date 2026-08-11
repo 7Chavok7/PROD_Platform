@@ -1,0 +1,160 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ customer.name }}{% endblock %}
+
+{% block breadcrumb_items %}
+<li class="breadcrumb-item"><a href="{% url 'customers:customer_list' %}">Контрагенты</a></li>
+<li class="breadcrumb-item active">{{ customer.name }}</li>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-start mb-4">
+    <div>
+        <h1>{{ customer.name }}</h1>
+        <p class="text-muted">{{ customer.get_type_display }}</p>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="{% url 'customers:customer_edit' customer.pk %}" class="btn btn-primary">
+            <i class="fas fa-edit me-2"></i>Редактировать
+        </a>
+        <a href="{% url 'customers:customer_delete' customer.pk %}" class="btn btn-danger">
+            <i class="fas fa-trash me-2"></i>Удалить
+        </a>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Основная информация -->
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-info-circle me-2"></i>Основная информация
+            </div>
+            <div class="card-body">
+                <table class="table table-borderless">
+                    <tr>
+                        <th style="width: 35%;">Наименование</th>
+                        <td>{{ customer.name }}</td>
+                    </tr>
+                    <tr>
+                        <th>Краткое наименование</th>
+                        <td>{{ customer.short_name|default:'—' }}</td>
+                    </tr>
+                    <tr>
+                        <th>Тип</th>
+                        <td>{{ customer.get_type_display }}</td>
+                    </tr>
+                    <tr>
+                        <th>ИНН</th>
+                        <td>{{ customer.inn|default:'—' }}</td>
+                    </tr>
+                    <tr>
+                        <th>КПП</th>
+                        <td>{{ customer.kpp|default:'—' }}</td>
+                    </tr>
+                    <tr>
+                        <th>ОГРН</th>
+                        <td>{{ customer.ogrn|default:'—' }}</td>
+                    </tr>
+                    <tr>
+                        <th>Статус</th>
+                        <td>
+                            <span class="badge {% if customer.is_active %}bg-success{% else %}bg-danger{% endif %}">
+                                {{ customer.is_active|yesno:"Активен,Неактивен" }}
+                            </span>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Контакты -->
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-address-card me-2"></i>Контакты
+            </div>
+            <div class="card-body">
+                <table class="table table-borderless">
+                    <tr>
+                        <th style="width: 35%;">Контактное лицо</th>
+                        <td>{{ customer.contact_person|default:'—' }}</td>
+                    </tr>
+                    <tr>
+                        <th>Телефон</th>
+                        <td>{{ customer.phone|default:'—' }}</td>
+                    </tr>
+                    <tr>
+                        <th>Email</th>
+                        <td>{{ customer.email|default:'—' }}</td>
+                    </tr>
+                    <tr>
+                        <th>Юридический адрес</th>
+                        <td>{{ customer.address|default:'—'|linebreaks }}</td>
+                    </tr>
+                    <tr>
+                        <th>Фактический адрес</th>
+                        <td>{{ customer.actual_address|default:'—'|linebreaks }}</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Банковские реквизиты -->
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-university me-2"></i>Банковские реквизиты
+            </div>
+            <div class="card-body">
+                <table class="table table-borderless">
+                    <tr>
+                        <th style="width: 35%;">Банк</th>
+                        <td>{{ customer.bank_name|default:'—' }}</td>
+                    </tr>
+                    <tr>
+                        <th>БИК</th>
+                        <td>{{ customer.bik|default:'—' }}</td>
+                    </tr>
+                    <tr>
+                        <th>Расчетный счет</th>
+                        <td>{{ customer.checking_account|default:'—' }}</td>
+                    </tr>
+                    <tr>
+                        <th>Кор. счет</th>
+                        <td>{{ customer.cor_account|default:'—' }}</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Дополнительно -->
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-comment me-2"></i>Дополнительно
+            </div>
+            <div class="card-body">
+                <table class="table table-borderless">
+                    <tr>
+                        <th style="width: 35%;">Комментарий</th>
+                        <td>{{ customer.comment|default:'—'|linebreaks }}</td>
+                    </tr>
+                    <tr>
+                        <th>Дата создания</th>
+                        <td>{{ customer.created_at|date:"d.m.Y H:i" }}</td>
+                    </tr>
+                    <tr>
+                        <th>Последнее изменение</th>
+                        <td>{{ customer.updated_at|date:"d.m.Y H:i" }}</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

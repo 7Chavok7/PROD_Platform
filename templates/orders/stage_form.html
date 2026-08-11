@@ -1,0 +1,148 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block breadcrumb_items %}
+<li class="breadcrumb-item"><a href="{% url 'orders:order_list' %}">Заказы</a></li>
+<li class="breadcrumb-item"><a href="{% url 'orders:order_detail' order.pk %}">{{ order.number }}</a></li>
+<li class="breadcrumb-item active">{{ title }}</li>
+{% endblock %}
+
+{% block content %}
+<div class="card shadow">
+    <div class="card-header bg-primary text-white">
+        <h4 class="mb-0"><i class="fas fa-tasks me-2"></i>{{ title }}</h4>
+    </div>
+    <div class="card-body">
+        <form method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+
+            <div class="row g-3">
+                <!-- Название этапа -->
+                <div class="col-md-6">
+                    <label class="form-label required-field" for="{{ form.name.id_for_label }}">
+                        {{ form.name.label }}
+                    </label>
+                    {{ form.name }}
+                    {% if form.name.errors %}
+                        <div class="text-danger small mt-1">{{ form.name.errors }}</div>
+                    {% endif %}
+                </div>
+
+                <!-- Статус -->
+                <div class="col-md-6">
+                    <label class="form-label" for="{{ form.status.id_for_label }}">
+                        {{ form.status.label }}
+                    </label>
+                    {{ form.status }}
+                    {% if form.status.errors %}
+                        <div class="text-danger small mt-1">{{ form.status.errors }}</div>
+                    {% endif %}
+                </div>
+
+                <!-- Участок -->
+                <div class="col-md-4">
+                    <label class="form-label required-field" for="{{ form.department.id_for_label }}">
+                        {{ form.department.label }}
+                    </label>
+                    {{ form.department }}
+                    {% if form.department.errors %}
+                        <div class="text-danger small mt-1">{{ form.department.errors }}</div>
+                    {% endif %}
+                </div>
+
+                <!-- Требуемый навык -->
+                <div class="col-md-4">
+                    <label class="form-label required-field" for="{{ form.required_skill.id_for_label }}">
+                        {{ form.required_skill.label }}
+                    </label>
+                    {{ form.required_skill }}
+                    {% if form.required_skill.errors %}
+                        <div class="text-danger small mt-1">{{ form.required_skill.errors }}</div>
+                    {% endif %}
+                </div>
+
+                <!-- Назначенный сотрудник -->
+                <div class="col-md-4">
+                    <label class="form-label" for="{{ form.assigned_employee.id_for_label }}">
+                        {{ form.assigned_employee.label }}
+                    </label>
+                    {{ form.assigned_employee }}
+                    {% if form.assigned_employee.errors %}
+                        <div class="text-danger small mt-1">{{ form.assigned_employee.errors }}</div>
+                    {% endif %}
+                    <small class="text-muted">Сотрудники фильтруются по выбранному навыку</small>
+                </div>
+
+                <!-- Плановые часы -->
+                <div class="col-md-3">
+                    <label class="form-label required-field" for="{{ form.planned_hours.id_for_label }}">
+                        {{ form.planned_hours.label }}
+                    </label>
+                    {{ form.planned_hours }}
+                    {% if form.planned_hours.errors %}
+                        <div class="text-danger small mt-1">{{ form.planned_hours.errors }}</div>
+                    {% endif %}
+                </div>
+
+                <!-- Плановая дата начала -->
+                <div class="col-md-4">
+                    <label class="form-label required-field" for="{{ form.planned_start_date.id_for_label }}">
+                        {{ form.planned_start_date.label }}
+                    </label>
+                    {{ form.planned_start_date }}
+                    {% if form.planned_start_date.errors %}
+                        <div class="text-danger small mt-1">{{ form.planned_start_date.errors }}</div>
+                    {% endif %}
+                </div>
+
+                <!-- Плановая дата завершения -->
+                <div class="col-md-4">
+                    <label class="form-label required-field" for="{{ form.planned_finish_date.id_for_label }}">
+                        {{ form.planned_finish_date.label }}
+                    </label>
+                    {{ form.planned_finish_date }}
+                    {% if form.planned_finish_date.errors %}
+                        <div class="text-danger small mt-1">{{ form.planned_finish_date.errors }}</div>
+                    {% endif %}
+                </div>
+
+                <!-- Чертежи (файлы этапа) -->
+                <div class="col-md-12">
+                    <label class="form-label" for="{{ form.files.id_for_label }}">
+                        {{ form.files.label }}
+                    </label>
+                    {{ form.files }}
+                    {% if form.files.errors %}
+                        <div class="text-danger small mt-1">{{ form.files.errors }}</div>
+                    {% endif %}
+                    <small class="text-muted">Удерживайте Ctrl (или Cmd) для выбора нескольких чертежей</small>
+                </div>
+
+                <!-- Комментарий -->
+                <div class="col-12">
+                    <label class="form-label" for="{{ form.comment.id_for_label }}">
+                        {{ form.comment.label }}
+                    </label>
+                    {{ form.comment }}
+                    {% if form.comment.errors %}
+                        <div class="text-danger small mt-1">{{ form.comment.errors }}</div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Кнопки -->
+            <div class="mt-4">
+                <button type="submit" class="btn btn-success">
+                    <i class="fas fa-save me-2"></i>Сохранить
+                </button>
+                <a href="{% url 'orders:order_detail' order.pk %}" class="btn btn-secondary">
+                    <i class="fas fa-times me-2"></i>Отмена
+                </a>
+            </div>
+
+        </form>
+    </div>
+</div>
+{% endblock %}

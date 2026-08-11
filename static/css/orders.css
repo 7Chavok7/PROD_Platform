@@ -1,0 +1,110 @@
+/* ===== ЗАКАЗЫ ===== */
+
+/* Карточка заказа */
+.order-card {
+    border-left: 4px solid #0d6efd;
+    transition: box-shadow 0.2s;
+    cursor: pointer;
+}
+
+.order-card:hover {
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+}
+
+.order-card .card-header {
+    background-color: transparent;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.order-card .card-body {
+    padding: 16px 20px;
+}
+
+/* Статусы заказов */
+.badge-status-order {
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-weight: 500;
+    font-size: 0.75rem;
+}
+
+.badge-status-order.draft {
+    background-color: #e9ecef;
+    color: #495057;
+}
+
+.badge-status-order.in_progress {
+    background-color: #cfe2ff;
+    color: #0a58ca;
+}
+
+.badge-status-order.completed {
+    background-color: #d1e7dd;
+    color: #0a3622;
+}
+
+.badge-status-order.cancelled {
+    background-color: #f8d7da;
+    color: #58151c;
+}
+
+.badge-status-order.on_hold {
+    background-color: #fff3cd;
+    color: #664d03;
+}
+
+/* Приоритеты */
+.badge-priority {
+    padding: 2px 10px;
+    border-radius: 12px;
+    font-size: 0.7rem;
+    font-weight: 600;
+}
+
+.badge-priority.high {
+    background-color: #dc3545;
+    color: #fff;
+}
+
+.badge-priority.medium {
+    background-color: #ffc107;
+    color: #212529;
+}
+
+.badge-priority.low {
+    background-color: #198754;
+    color: #fff;
+}
+
+/* Этапы в карточке заказа */
+.stage-list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.stage-list .stage-item {
+    display: flex;
+    align-items: center;
+    padding: 6px 0;
+    border-bottom: 1px solid #f1f3f5;
+    gap: 12px;
+}
+
+.stage-list .stage-item:last-child {
+    border-bottom: none;
+}
+
+.stage-item .stage-number {
+    font-weight: 600;
+    color: #6c757d;
+    min-width: 30px;
+}
+
+.stage-item .stage-name {
+    flex: 1;
+}
+
+.stage-item .stage-status {
+    font-size: 0.7rem;
+}

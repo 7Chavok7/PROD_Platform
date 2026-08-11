@@ -1,0 +1,67 @@
+// Заказы — интерактивность
+document.addEventListener('DOMContentLoaded', function() {
+    'use strict';
+
+    // 1. Переключение статуса заказа с подтверждением
+    const statusChangeForms = document.querySelectorAll('.order-status-form');
+    statusChangeForms.forEach(function(form) {
+        form.addEventListener('submit', function(e) {
+            const newStatus = this.querySelector('select[name="status"]');
+            if (newStatus) {
+                const confirmMsg = `Вы уверены, что хотите изменить статус заказа на "${newStatus.options[newStatus.selectedIndex].text}"?`;
+                if (!confirm(confirmMsg)) {
+                    e.preventDefault();
+                }
+            }
+        });
+    });
+
+    // 2. Подтверждение удаления этапа
+    const deleteStageBtns = document.querySelectorAll('.delete-stage');
+    deleteStageBtns.forEach(function(btn) {
+        btn.addEventListener('click', function(e) {
+            if (!confirm('Вы уверены, что хотите удалить этот этап?')) {
+                e.preventDefault();
+            }
+        });
+    });
+
+    // 3. Автоматический подсчёт плановых часов по этапам (для отображения)
+    const totalPlannedHours = document.getElementById('totalPlannedHours');
+    if (totalPlannedHours) {
+        const hours = parseFloat(totalPlannedHours.dataset.total) || 0;
+        totalPlannedHours.textContent = hours.toFixed(1);
+    }
+
+    // 4. Маска для дат (если нужно)
+    const dateInputs = document.querySelectorAll('input[type="date"]');
+    dateInputs.forEach(function(input) {
+        // Устанавливаем минимальную дату = сегодня
+        if (!input.value) {
+            const today = new Date().toISOString().split('T')[0];
+            input.min = today;
+        }
+    });
+
+    // 5. Фильтрация заказов по статусу (быстрая)
+    const statusFilter = document.getElementById('statusFilter');
+    if (statusFilter) {
+        statusFilter.addEventListener('change', function() {
+            this.closest('form').submit();
+        });
+    }
+
+    // 6. Поиск с задержкой
+    const searchInput = document.getElementById('orderSearch');
+    if (searchInput) {
+        let timeoutId = null;
+        searchInput.addEventListener('input', function() {
+            clearTimeout(timeoutId);
+            timeoutId = setTimeout(function() {
+                searchInput.closest('form').submit();
+            }, 500);
+        });
+    }
+
+    console.log('📦 Заказы загружены');
+});

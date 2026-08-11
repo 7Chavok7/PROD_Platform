@@ -1,0 +1,229 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block breadcrumb_items %}
+<li class="breadcrumb-item"><a href="{% url 'customers:customer_list' %}">Контрагенты</a></li>
+<li class="breadcrumb-item active">{{ title }}</li>
+{% endblock %}
+
+{% block content %}
+<div class="card shadow">
+    <div class="card-header bg-primary text-white">
+        <h4 class="mb-0"><i class="fas fa-handshake me-2"></i>{{ title }}</h4>
+    </div>
+    <div class="card-body">
+        <form method="post">
+            {% csrf_token %}
+
+            <div class="row g-3">
+                <!-- Наименование -->
+                <div class="col-md-6">
+                    <label class="form-label required-field" for="{{ form.name.id_for_label }}">
+                        {{ form.name.label }}
+                    </label>
+                    {{ form.name }}
+                    {% if form.name.errors %}
+                        <div class="text-danger small mt-1">{{ form.name.errors }}</div>
+                    {% endif %}
+                </div>
+
+                <!-- Краткое наименование -->
+                <div class="col-md-6">
+                    <label class="form-label" for="{{ form.short_name.id_for_label }}">
+                        {{ form.short_name.label }}
+                    </label>
+                    {{ form.short_name }}
+                    {% if form.short_name.errors %}
+                        <div class="text-danger small mt-1">{{ form.short_name.errors }}</div>
+                    {% endif %}
+                </div>
+
+                <!-- Тип -->
+                <div class="col-md-4">
+                    <label class="form-label" for="{{ form.type.id_for_label }}">
+                        {{ form.type.label }}
+                    </label>
+                    {{ form.type }}
+                    {% if form.type.errors %}
+                        <div class="text-danger small mt-1">{{ form.type.errors }}</div>
+                    {% endif %}
+                </div>
+
+                <!-- ИНН -->
+                <div class="col-md-4">
+                    <label class="form-label" for="{{ form.inn.id_for_label }}">
+                        {{ form.inn.label }}
+                    </label>
+                    {{ form.inn }}
+                    {% if form.inn.errors %}
+                        <div class="text-danger small mt-1">{{ form.inn.errors }}</div>
+                    {% endif %}
+                </div>
+
+                <!-- КПП -->
+                <div class="col-md-4">
+                    <label class="form-label" for="{{ form.kpp.id_for_label }}">
+                        {{ form.kpp.label }}
+                    </label>
+                    {{ form.kpp }}
+                    {% if form.kpp.errors %}
+                        <div class="text-danger small mt-1">{{ form.kpp.errors }}</div>
+                    {% endif %}
+                </div>
+
+                <!-- ОГРН -->
+                <div class="col-md-4">
+                    <label class="form-label" for="{{ form.ogrn.id_for_label }}">
+                        {{ form.ogrn.label }}
+                    </label>
+                    {{ form.ogrn }}
+                    {% if form.ogrn.errors %}
+                        <div class="text-danger small mt-1">{{ form.ogrn.errors }}</div>
+                    {% endif %}
+                </div>
+
+                <!-- Контактное лицо -->
+                <div class="col-md-4">
+                    <label class="form-label" for="{{ form.contact_person.id_for_label }}">
+                        {{ form.contact_person.label }}
+                    </label>
+                    {{ form.contact_person }}
+                    {% if form.contact_person.errors %}
+                        <div class="text-danger small mt-1">{{ form.contact_person.errors }}</div>
+                    {% endif %}
+                </div>
+
+                <!-- Телефон -->
+                <div class="col-md-4">
+                    <label class="form-label" for="{{ form.phone.id_for_label }}">
+                        {{ form.phone.label }}
+                    </label>
+                    {{ form.phone }}
+                    {% if form.phone.errors %}
+                        <div class="text-danger small mt-1">{{ form.phone.errors }}</div>
+                    {% endif %}
+                </div>
+
+                <!-- Email -->
+                <div class="col-md-4">
+                    <label class="form-label" for="{{ form.email.id_for_label }}">
+                        {{ form.email.label }}
+                    </label>
+                    {{ form.email }}
+                    {% if form.email.errors %}
+                        <div class="text-danger small mt-1">{{ form.email.errors }}</div>
+                    {% endif %}
+                </div>
+
+                <!-- Юридический адрес -->
+                <div class="col-md-6">
+                    <label class="form-label" for="{{ form.address.id_for_label }}">
+                        {{ form.address.label }}
+                    </label>
+                    {{ form.address }}
+                    {% if form.address.errors %}
+                        <div class="text-danger small mt-1">{{ form.address.errors }}</div>
+                    {% endif %}
+                </div>
+
+                <!-- Фактический адрес -->
+                <div class="col-md-6">
+                    <label class="form-label" for="{{ form.actual_address.id_for_label }}">
+                        {{ form.actual_address.label }}
+                    </label>
+                    {{ form.actual_address }}
+                    {% if form.actual_address.errors %}
+                        <div class="text-danger small mt-1">{{ form.actual_address.errors }}</div>
+                    {% endif %}
+                </div>
+
+                <!-- Банк -->
+                <div class="col-md-6">
+                    <label class="form-label" for="{{ form.bank_name.id_for_label }}">
+                        {{ form.bank_name.label }}
+                    </label>
+                    {{ form.bank_name }}
+                    {% if form.bank_name.errors %}
+                        <div class="text-danger small mt-1">{{ form.bank_name.errors }}</div>
+                    {% endif %}
+                </div>
+
+                <!-- БИК -->
+                <div class="col-md-6">
+                    <label class="form-label" for="{{ form.bik.id_for_label }}">
+                        {{ form.bik.label }}
+                    </label>
+                    {{ form.bik }}
+                    {% if form.bik.errors %}
+                        <div class="text-danger small mt-1">{{ form.bik.errors }}</div>
+                    {% endif %}
+                </div>
+
+                <!-- Расчетный счет -->
+                <div class="col-md-6">
+                    <label class="form-label" for="{{ form.checking_account.id_for_label }}">
+                        {{ form.checking_account.label }}
+                    </label>
+                    {{ form.checking_account }}
+                    {% if form.checking_account.errors %}
+                        <div class="text-danger small mt-1">{{ form.checking_account.errors }}</div>
+                    {% endif %}
+                </div>
+
+                <!-- Кор. счет -->
+                <div class="col-md-6">
+                    <label class="form-label" for="{{ form.cor_account.id_for_label }}">
+                        {{ form.cor_account.label }}
+                    </label>
+                    {{ form.cor_account }}
+                    {% if form.cor_account.errors %}
+                        <div class="text-danger small mt-1">{{ form.cor_account.errors }}</div>
+                    {% endif %}
+                </div>
+
+                <!-- Комментарий -->
+                <div class="col-12">
+                    <label class="form-label" for="{{ form.comment.id_for_label }}">
+                        {{ form.comment.label }}
+                    </label>
+                    {{ form.comment }}
+                    {% if form.comment.errors %}
+                        <div class="text-danger small mt-1">{{ form.comment.errors }}</div>
+                    {% endif %}
+                </div>
+
+                <!-- Активен -->
+                <div class="col-12">
+                    <div class="form-check">
+                        {{ form.is_active }}
+                        <label class="form-check-label" for="{{ form.is_active.id_for_label }}">
+                            {{ form.is_active.label }}
+                        </label>
+                    </div>
+                    {% if form.is_active.errors %}
+                        <div class="text-danger small mt-1">{{ form.is_active.errors }}</div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Кнопки -->
+            <div class="mt-4">
+                <button type="submit" class="btn btn-success">
+                    <i class="fas fa-save me-2"></i>Сохранить
+                </button>
+                <a href="{% url 'customers:customer_list' %}" class="btn btn-secondary">
+                    <i class="fas fa-times me-2"></i>Отмена
+                </a>
+                {% if customer %}
+                    <a href="{% url 'customers:customer_detail' customer.pk %}" class="btn btn-outline-info ms-auto">
+                        <i class="fas fa-arrow-left me-2"></i>Назад
+                    </a>
+                {% endif %}
+            </div>
+
+        </form>
+    </div>
+</div>
+{% endblock %}
