@@ -1,6 +1,7 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib import messages
+from django.db.models import Q
 from .models import Customer
 from .forms import CustomerForm
 
@@ -15,6 +16,17 @@ def is_manager(user):
 @user_passes_test(is_manager)
 def customer_list(request):
     customers = Customer.objects.filter(is_active=True)
+    
+    # Поиск
+    search = request.GET.get('search')
+    if search:
+        customers = customers.filter(
+            Q(name__icontains=search) |
+            Q(short_name__icontains=search) |
+            Q(inn__icontains=search) |
+            Q(contact_person__icontains=search)
+        )
+    
     context = {
         'customers': customers,
         'active_menu': 'customers',

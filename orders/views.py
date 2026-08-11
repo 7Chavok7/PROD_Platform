@@ -4,7 +4,7 @@ from django.contrib import messages
 from django.db.models import Q, Count
 from django.db import transaction
 from .models import Order, Stage, Drawing, OrderFile
-from .forms import OrderForm, StageForm, DrawingForm, OrderFileForm, OrderFilterForm
+from .forms import OrderForm, StageForm, DrawingForm, OrderFileForm
 from employees.models import Employee
 
 
@@ -24,14 +24,17 @@ def order_list(request):
     """Список заказов с фильтрацией"""
     orders = Order.objects.select_related('customer', 'responsible_manager').prefetch_related('stages').all()
     
+    # Фильтр по статусу
     status = request.GET.get('status')
     if status:
         orders = orders.filter(status=status)
     
+    # Фильтр по приоритету
     priority = request.GET.get('priority')
     if priority:
         orders = orders.filter(priority=priority)
     
+    # Поиск
     search = request.GET.get('search')
     if search:
         orders = orders.filter(
@@ -40,17 +43,16 @@ def order_list(request):
             Q(customer__name__icontains=search)
         )
     
+    # Добавляем прогресс для каждого заказа
     for order in orders:
         total_stages = order.stages.count()
         completed_stages = order.stages.filter(status=Stage.Status.COMPLETED).count()
         order.progress = int((completed_stages / total_stages * 100)) if total_stages > 0 else 0
         order.completed_count = completed_stages
     
-    filter_form = OrderFilterForm(request.GET)
-    
     context = {
         'orders': orders,
-        'filter_form': filter_form,
+        'statuses': Order.Status.choices,
         'active_menu': 'orders',
         'title': 'Заказы',
     }

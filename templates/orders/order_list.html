@@ -19,47 +19,39 @@
     </a>
 </div>
 
-<!-- ФИЛЬТРЫ -->
+<!-- ФИЛЬТР -->
 <div class="card mb-4">
     <div class="card-body">
-        <div class="row g-3 align-items-end">
+        <div class="row g-2">
+            <div class="col-md-6">
+                <input type="text" id="filterSearch" class="form-control form-control-sm" 
+                       placeholder="Поиск по номеру, названию..." 
+                       value="{{ request.GET.search }}">
+            </div>
             <div class="col-md-3">
-                <label class="form-label">Статус</label>
-                <select id="statusFilter" class="form-select">
+                <select id="filterStatus" class="form-select form-select-sm">
                     <option value="">Все статусы</option>
-                    {% for status_code, status_label in statuses %}
-                        <option value="{{ status_code }}" {% if request.GET.status == status_code %}selected{% endif %}>
-                            {{ status_label }}
-                        </option>
+                    {% for code, label in statuses %}
+                        <option value="{{ label }}">{{ label }}</option>
                     {% endfor %}
                 </select>
             </div>
             <div class="col-md-3">
-                <label class="form-label">Приоритет</label>
-                <select id="priorityFilter" class="form-select">
+                <select id="filterPriority" class="form-select form-select-sm">
                     <option value="">Все приоритеты</option>
-                    <option value="high" {% if request.GET.priority == 'high' %}selected{% endif %}>Высокий</option>
-                    <option value="medium" {% if request.GET.priority == 'medium' %}selected{% endif %}>Средний</option>
-                    <option value="low" {% if request.GET.priority == 'low' %}selected{% endif %}>Низкий</option>
+                    <option value="Высокий">Высокий</option>
+                    <option value="Средний">Средний</option>
+                    <option value="Низкий">Низкий</option>
                 </select>
-            </div>
-            <div class="col-md-4">
-                <label class="form-label">Поиск</label>
-                <input type="text" id="searchInput" class="form-control" placeholder="Номер, название..." value="{{ request.GET.search }}">
-            </div>
-            <div class="col-md-2">
-                <button type="button" class="btn btn-secondary w-100" id="applyFilterBtn">
-                    <i class="fas fa-search me-2"></i>Найти
-                </button>
             </div>
         </div>
     </div>
 </div>
 
 <!-- СПИСОК ЗАКАЗОВ -->
-<div class="row">
+<div class="row" id="filterTable">
     {% for order in orders %}
-    <div class="col-md-6 col-lg-4">
+    <div class="col-md-6 col-lg-4 order-card-wrapper">
         <div class="card order-card mb-3" onclick="window.location.href='{% url 'orders:order_detail' order.pk %}'">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <span class="fw-bold">{{ order.number }}</span>
@@ -115,33 +107,10 @@
 {% endblock %}
 
 {% block extra_js %}
+<script src="{% static 'js/filter.js' %}"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    const searchInput = document.getElementById('searchInput');
-    const statusFilter = document.getElementById('statusFilter');
-    const priorityFilter = document.getElementById('priorityFilter');
-    const applyBtn = document.getElementById('applyFilterBtn');
-
-    function applyFilter() {
-        const params = new URLSearchParams();
-        const search = searchInput.value.trim();
-        const status = statusFilter.value;
-        const priority = priorityFilter.value;
-
-        if (search) params.append('search', search);
-        if (status) params.append('status', status);
-        if (priority) params.append('priority', priority);
-
-        window.location.href = '{% url "orders:order_list" %}' + '?' + params.toString();
-    }
-
-    applyBtn.addEventListener('click', applyFilter);
-
-    searchInput.addEventListener('keyup', function(e) {
-        if (e.key === 'Enter') {
-            applyFilter();
-        }
-    });
+    // Дополнительная логика для заказов
 });
 </script>
 {% endblock %}

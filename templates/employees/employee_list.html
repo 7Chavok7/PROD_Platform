@@ -11,39 +11,22 @@
     </a>
 </div>
 
-<!-- ФИЛЬТРЫ -->
+<!-- ФИЛЬТР -->
 <div class="card mb-4">
     <div class="card-body">
-        <div class="row g-3 align-items-end">
-            <div class="col-md-3">
-                <label class="form-label">Участок</label>
-                <select id="departmentFilter" class="form-select">
+        <div class="row g-2">
+            <div class="col-md-6">
+                <input type="text" id="filterSearch" class="form-control form-control-sm" 
+                       placeholder="Поиск по ФИО, табельному..." 
+                       value="{{ request.GET.search }}">
+            </div>
+            <div class="col-md-6">
+                <select id="filterSelect" class="form-select form-select-sm">
                     <option value="">Все участки</option>
                     {% for dept in departments %}
-                        <option value="{{ dept.pk }}" {% if request.GET.department == dept.pk|stringformat:'s' %}selected{% endif %}>
-                            {{ dept.name }}
-                        </option>
+                        <option value="{{ dept.name }}">{{ dept.name }}</option>
                     {% endfor %}
                 </select>
-            </div>
-            <div class="col-md-3">
-                <label class="form-label">Статус</label>
-                <select id="statusFilter" class="form-select">
-                    <option value="">Все статусы</option>
-                    <option value="active" {% if request.GET.status == 'active' %}selected{% endif %}>Активен</option>
-                    <option value="vacation" {% if request.GET.status == 'vacation' %}selected{% endif %}>Отпуск</option>
-                    <option value="sick" {% if request.GET.status == 'sick' %}selected{% endif %}>Больничный</option>
-                    <option value="fired" {% if request.GET.status == 'fired' %}selected{% endif %}>Уволен</option>
-                </select>
-            </div>
-            <div class="col-md-4">
-                <label class="form-label">Поиск</label>
-                <input type="text" id="searchInput" class="form-control" placeholder="ФИО, табельный..." value="{{ request.GET.search }}">
-            </div>
-            <div class="col-md-2">
-                <button type="button" class="btn btn-secondary w-100" id="applyFilterBtn">
-                    <i class="fas fa-search me-2"></i>Найти
-                </button>
             </div>
         </div>
     </div>
@@ -53,7 +36,7 @@
 <div class="card">
     <div class="card-body p-0">
         <div class="table-responsive">
-            <table class="table table-hover mb-0">
+            <table class="table table-hover mb-0" id="filterTable">
                 <thead>
                     <tr>
                         <th>ФИО</th>
@@ -61,10 +44,10 @@
                         <th>Участок</th>
                         <th>Должность</th>
                         <th>Статус</th>
-                        <th style="width: 100px;">Действия</th>
+                        <th>Действия</th>
                     </tr>
                 </thead>
-                <tbody id="employeeTableBody">
+                <tbody>
                     {% for employee in employees %}
                     <tr>
                         <td>
@@ -81,14 +64,12 @@
                             </span>
                         </td>
                         <td>
-                            <div class="d-flex gap-1">
-                                <a href="{% url 'employees:employee_edit' employee.pk %}" class="btn btn-sm btn-outline-primary">
-                                    <i class="fas fa-edit"></i>
-                                </a>
-                                <a href="{% url 'employees:employee_delete' employee.pk %}" class="btn btn-sm btn-outline-danger confirm-delete">
-                                    <i class="fas fa-trash"></i>
-                                </a>
-                            </div>
+                            <a href="{% url 'employees:employee_edit' employee.pk %}" class="btn btn-sm btn-outline-primary">
+                                <i class="fas fa-edit"></i>
+                            </a>
+                            <a href="{% url 'employees:employee_delete' employee.pk %}" class="btn btn-sm btn-outline-danger confirm-delete">
+                                <i class="fas fa-trash"></i>
+                            </a>
                         </td>
                     </tr>
                     {% empty %}
@@ -96,10 +77,6 @@
                         <td colspan="6" class="text-center py-4 text-muted">
                             <i class="fas fa-users fa-2x d-block mb-2"></i>
                             Сотрудников пока нет
-                            <br>
-                            <a href="{% url 'employees:employee_create' %}" class="btn btn-sm btn-primary mt-2">
-                                <i class="fas fa-plus"></i> Добавить первого сотрудника
-                            </a>
                         </td>
                     </tr>
                     {% endfor %}
@@ -111,35 +88,9 @@
 {% endblock %}
 
 {% block extra_js %}
+<script src="{% static 'js/filter.js' %}"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    const searchInput = document.getElementById('searchInput');
-    const departmentFilter = document.getElementById('departmentFilter');
-    const statusFilter = document.getElementById('statusFilter');
-    const applyBtn = document.getElementById('applyFilterBtn');
-
-    function applyFilter() {
-        const params = new URLSearchParams();
-        const search = searchInput.value.trim();
-        const department = departmentFilter.value;
-        const status = statusFilter.value;
-
-        if (search) params.append('search', search);
-        if (department) params.append('department', department);
-        if (status) params.append('status', status);
-
-        window.location.href = '{% url "employees:employee_list" %}' + '?' + params.toString();
-    }
-
-    applyBtn.addEventListener('click', applyFilter);
-
-    searchInput.addEventListener('keyup', function(e) {
-        if (e.key === 'Enter') {
-            applyFilter();
-        }
-    });
-
-    // Удаление с подтверждением
     document.querySelectorAll('.confirm-delete').forEach(function(btn) {
         btn.addEventListener('click', function(e) {
             if (!confirm('Вы уверены, что хотите удалить этого сотрудника?')) {

@@ -1,4 +1,3 @@
-# .employee/views.py | A.Grachev
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib import messages
@@ -28,6 +27,7 @@ def is_manager(user):
         return True
     return user.is_authenticated and user.role in ['admin', 'director', 'manager']
 
+
 # =========================================================
 # =   СОТРУДНИКИ                                          =
 # =========================================================
@@ -40,7 +40,7 @@ def employee_list(request):
     ).all()
     departments = Department.objects.all()
     
-    # Фильтр по участку
+    # Фильтр по участку (через GET-параметр)
     department_id = request.GET.get('department')
     if department_id:
         employees = employees.filter(department_id=department_id)
@@ -90,33 +90,13 @@ def employee_create(request):
         form = EmployeeForm(request.POST)
         if form.is_valid():
             employee = form.save()
-            
-            # Сохраняем навыки с уровнями
-            skills_data = {}
-            for key, value in request.POST.items():
-                if key.startswith('skill_') and key.endswith('_id'):
-                    index = key.split('_')[1]
-                    skill_id = value
-                    level_key = f'skill_{index}_level'
-                    level = request.POST.get(level_key, 1)
-                    if skill_id:
-                        skills_data[int(skill_id)] = int(level)
-            
-            for skill_id, level in skills_data.items():
-                EmployeeSkill.objects.create(
-                    employee=employee,
-                    skill_id=skill_id,
-                    level=level
-                )
-            
             messages.success(request, f'Сотрудник {employee} успешно создан!')
             return redirect('employees:employee_detail', pk=employee.pk)
     else:
         form = EmployeeForm()
-    
+
     context = {
         'form': form,
-        'skills': Skill.objects.all(),
         'title': 'Добавление сотрудника',
         'active_menu': 'employees',
     }
@@ -131,42 +111,20 @@ def employee_edit(request, pk):
     if request.method == 'POST':
         form = EmployeeForm(request.POST, instance=employee)
         if form.is_valid():
-            employee = form.save()
-            
-            # Удаляем старые навыки
-            employee.employeeskill_set.all().delete()
-            
-            # Сохраняем новые навыки с уровнями
-            skills_data = {}
-            for key, value in request.POST.items():
-                if key.startswith('skill_') and key.endswith('_id'):
-                    index = key.split('_')[1]
-                    skill_id = value
-                    level_key = f'skill_{index}_level'
-                    level = request.POST.get(level_key, 1)
-                    if skill_id:
-                        skills_data[int(skill_id)] = int(level)
-            
-            for skill_id, level in skills_data.items():
-                EmployeeSkill.objects.create(
-                    employee=employee,
-                    skill_id=skill_id,
-                    level=level
-                )
-            
+            form.save()
             messages.success(request, f'Сотрудник {employee} успешно обновлён!')
             return redirect('employees:employee_detail', pk=employee.pk)
     else:
         form = EmployeeForm(instance=employee)
-    
+
     context = {
         'form': form,
         'employee': employee,
-        'skills': Skill.objects.all(),
         'title': 'Редактирование сотрудника',
         'active_menu': 'employees',
     }
     return render(request, 'employees/employee_form.html', context)
+
 
 @login_required
 @user_passes_test(is_manager)
@@ -186,9 +144,9 @@ def employee_delete(request, pk):
     return render(request, 'employees/employee_confirm_delete.html', context)
 
 
-# ============================================================
-# УЧАСТКИ
-# ============================================================
+# =========================================================
+# =   УЧАСТКИ                                             =
+# =========================================================
 @login_required
 @user_passes_test(is_manager)
 def department_list(request):
@@ -260,9 +218,9 @@ def department_delete(request, pk):
     return render(request, 'employees/department_confirm_delete.html', context)
 
 
-# ============================================================
-# НАВЫКИ
-# ============================================================
+# =========================================================
+# =   НАВЫКИ                                              =
+# =========================================================
 @login_required
 @user_passes_test(is_manager)
 def skill_list(request):
@@ -334,9 +292,9 @@ def skill_delete(request, pk):
     return render(request, 'employees/skill_confirm_delete.html', context)
 
 
-# ============================================================
-# ДОЛЖНОСТИ
-# ============================================================
+# =========================================================
+# =   ДОЛЖНОСТИ                                           =
+# =========================================================
 @login_required
 @user_passes_test(is_manager)
 def position_list(request):
@@ -407,8 +365,9 @@ def position_delete(request, pk):
     }
     return render(request, 'employees/position_confirm_delete.html', context)
 
+
 # =========================================================
-# =     МАТРИЦА КВАЛИФИКАЦИЙ                              =
+# =   МАТРИЦА КВАЛИФИКАЦИЙ                                =
 # =========================================================
 @login_required
 @user_passes_test(is_manager)
@@ -421,13 +380,12 @@ def skill_matrix(request):
     # Собираем данные для матрицы
     matrix = []
     for employee in employees:
-        # Словарь: {skill_is: level}
-        skill_level = {es.skill_id: es.level for es in employee.employeeskill_set.all()}
-        row = {
+        # Словарь: {skill_id: level}
+        skill_levels = {es.skill_id: es.level for es in employee.employeeskill_set.all()}
+        matrix.append({
             'employee': employee,
-            'levels': skill_level,
-        }
-        matrix.append(row)
+            'levels': skill_levels,
+        })
         
     context = {
         'matrix': matrix,
