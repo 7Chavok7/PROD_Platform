@@ -134,3 +134,4 @@ CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_BACKEND = os.getenv('REDIS_URL', 'redis://localhost:6379/0')
 
+TEMPLATES[0]['OPTIONS']['context_processors'].append('core_app.context_processor.active_modules')
