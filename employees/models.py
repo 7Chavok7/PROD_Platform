@@ -2,6 +2,7 @@
 from django.db import models
 from django.contrib.auth import get_user_model
 from simple_history.models import HistoricalRecords
+from core_app.abstract_models import BaseWorker
 
 
 User = get_user_model()
@@ -111,8 +112,8 @@ class Position(models.Model):
         return self.name
         
 
-class Employee(models.Model):
-    """Сотрудник"""
+class Employee(BaseWorker):
+    """Сотрудник (расширенная модель)"""
     class Status(models.TextChoices):
         ACTIVE = 'active', 'Активен'
         VACATION = 'vacation', 'Отпуск'
@@ -217,10 +218,16 @@ class Employee(models.Model):
             return f'{self.last_name} {self.first_name} {self.patronymic}'
         return f'{self.last_name} {self.first_name}'
     
-    def short_name(self):
-        if self.patronymic:
-            return f'{self.last_name} {self.first_name[:1]}.{self.patronymic[:1]}.'
-        return f'{self.last_name} {self.first_name[:1]}.'
+    def save(self, *args, **kwargs):
+        if self.last_name and self.first_name:
+            if self.patronymic:
+                self.full_name = f'{self.last_name} {self.first_name} {self.patronymic}'
+                self.short_name = f'{self.last_name} {self.first_name[:1]}. {self.patronymic[:1]}.'
+            else:
+                self.full_name = f'{self.last_name} {self.first_name}'
+                self.short_name = f'{self.last_name} {self.first_name[:1]}.'
+        
+        super().save(*args, **kwargs)
         
         
 class EmployeeSkill(models.Model):

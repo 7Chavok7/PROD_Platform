@@ -3,9 +3,10 @@ from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib import messages
 from django.db.models import Q, Count
 from django.db import transaction
+from django.apps import apps
 from .models import Order, Stage, Drawing, OrderFile
 from .forms import OrderForm, StageForm, DrawingForm, OrderFileForm
-from employees.models import Employee
+from .services import OrderProgressService
 
 
 def is_manager(user):
@@ -43,12 +44,8 @@ def order_list(request):
             Q(customer__name__icontains=search)
         )
     
-    # Добавляем прогресс для каждого заказа
-    for order in orders:
-        total_stages = order.stages.count()
-        completed_stages = order.stages.filter(status=Stage.Status.COMPLETED).count()
-        order.progress = int((completed_stages / total_stages * 100)) if total_stages > 0 else 0
-        order.completed_count = completed_stages
+    # Добавляем прогресс через сервис
+    orders = OrderProgressService.get_orders_with_progress(orders)
     
     context = {
         'orders': orders,
@@ -62,15 +59,17 @@ def order_list(request):
 @login_required
 @user_passes_test(is_manager)
 def order_detail(request, pk):
+    """Детальная страница заказа"""
     order = get_object_or_404(Order.objects.prefetch_related('stages', 'files'), pk=pk)
     
-    total_stages = order.stages.count()
-    completed_stages = order.stages.filter(status=Stage.Status.COMPLETED).count()
-    progress = int((completed_stages / total_stages * 100)) if total_stages > 0 else 0
+    # Используем сервис для расчёта
+    progress = OrderProgressService.get_progress_percent(order)
+    completed_count = OrderProgressService.get_completed_stages_count(order)
     
     context = {
         'order': order,
         'progress': progress,
+        'completed_count': completed_count,
         'active_menu': 'orders',
         'title': f'{order.number} — {order.name}',
     }
@@ -82,9 +81,18 @@ def order_detail(request, pk):
 def order_create(request):
     if request.method == 'POST':
         form = OrderForm(request.POST, request.FILES)
+        
+        # ✅ ОТЛАДКА: выводим ошибки формы
+        if not form.is_valid():
+            print("❌ ФОРМА НЕ ВАЛИДНА!")
+            print(form.errors)
+            print(form.cleaned_data)
+        else:
+            print("✅ ФОРМА ВАЛИДНА")
+            print(form.cleaned_data)
+        
         if form.is_valid():
             order = form.save(commit=False)
-            order.responsible_manager = request.user
             order.save()
             form.save_m2m()
             messages.success(request, f'Заказ {order.number} успешно создан!')

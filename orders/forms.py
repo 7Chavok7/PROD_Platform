@@ -1,14 +1,14 @@
 from django import forms
+from django.apps import apps
 from django.contrib.auth import get_user_model
 from .models import Order, Stage, Drawing, OrderFile
-from employees.models import Employee, Department, Skill
 from customers.models import Customer
 
 User = get_user_model()
 
 
 # =========================================================
-# =   ФОРМА ДЛЯ ЗАКАЗА                                     =
+# =   ФОРМА ДЛЯ ЗАКАЗА (АДАПТИВНАЯ)                       =
 # =========================================================
 class OrderForm(forms.ModelForm):
     """Форма для создания/редактирования заказа"""
@@ -19,10 +19,27 @@ class OrderForm(forms.ModelForm):
         label='Файлы заказа'
     )
     
+    # ✅ Динамическое поле "Ответственный менеджер" — используем User
+    if apps.is_installed('employees'):
+        responsible_manager = forms.ModelChoiceField(
+            queryset=User.objects.filter(employee__status='active').exclude(is_superuser=True),
+            required=True,
+            label='Ответственный менеджер',
+            widget=forms.Select(attrs={'class': 'form-select'})
+        )
+    else:
+        responsible_manager = forms.CharField(
+            max_length=255,
+            required=True,
+            label='Ответственный менеджер (ФИО)',
+            widget=forms.TextInput(attrs={'class': 'form-control'})
+        )
+    
     class Meta:
         model = Order
         fields = [
-            'name', 'customer', 'status', 'priority',
+            'name', 'customer', 'responsible_manager',
+            'status', 'priority',
             'planned_completion_date', 'description'
         ]
         widgets = {
@@ -40,12 +57,25 @@ class OrderForm(forms.ModelForm):
     
     def save(self, commit=True):
         order = super().save(commit=False)
+        
+        # ✅ Если модуль employees активен — берём выбранного пользователя
+        if apps.is_installed('employees'):
+            responsible_manager = self.cleaned_data.get('responsible_manager')
+            if responsible_manager:
+                order.responsible_manager = responsible_manager
+        else:
+            # ✅ Если модуль employees не активен — сохраняем текст в description
+            responsible_manager_text = self.cleaned_data.get('responsible_manager')
+            if responsible_manager_text:
+                order.description = f"Менеджер: {responsible_manager_text}\n\n{order.description or ''}"
+        
         if commit:
             order.save()
-            # Сохраняем загруженные файлы
+            self.save_m2m()
+            
+            # Сохраняем файлы
             files = self.cleaned_data.get('order_files')
             if files:
-                # Если files - это список (MultipleFileInput), обрабатываем каждый
                 if isinstance(files, list):
                     for f in files:
                         OrderFile.objects.create(
@@ -56,7 +86,6 @@ class OrderForm(forms.ModelForm):
                             order=order
                         )
                 else:
-                    # Если один файл
                     OrderFile.objects.create(
                         name=files.name,
                         file=files,
@@ -68,19 +97,30 @@ class OrderForm(forms.ModelForm):
 
 
 # =========================================================
-# =   ФОРМА ДЛЯ ЭТАПА                                      =
+# =   ФОРМА ДЛЯ ЭТАПА (АДАПТИВНАЯ)                        =
 # =========================================================
 class StageForm(forms.ModelForm):
     """Форма для создания/редактирования этапа"""
     
-    assigned_employee = forms.ModelChoiceField(
-        queryset=Employee.objects.filter(
-            status=Employee.Status.ACTIVE
-        ).exclude(user__is_superuser=True),
-        required=False,
-        label='Назначенный сотрудник',
-        widget=forms.Select(attrs={'class': 'form-select'})
-    )
+    # Динамическое поле "Назначенный сотрудник"
+    if apps.is_installed('employees'):
+        from employees.models import Employee
+        
+        assigned_employee = forms.ModelChoiceField(
+            queryset=Employee.objects.filter(
+                status=Employee.Status.ACTIVE
+            ).exclude(user__is_superuser=True),
+            required=False,
+            label='Назначенный сотрудник',
+            widget=forms.Select(attrs={'class': 'form-select'})
+        )
+    else:
+        assigned_employee = forms.CharField(
+            max_length=255,
+            required=False,
+            label='Назначенный сотрудник (ФИО)',
+            widget=forms.TextInput(attrs={'class': 'form-control'})
+        )
     
     class Meta:
         model = Stage
@@ -103,11 +143,33 @@ class StageForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        if self.instance and self.instance.required_skill_id:
-            self.fields['assigned_employee'].queryset = Employee.objects.filter(
-                status=Employee.Status.ACTIVE,
-                skills__id=self.instance.required_skill_id
-            ).exclude(user__is_superuser=True).distinct()
+        # Если модуль employees активен и выбран навык — фильтруем сотрудников
+        if apps.is_installed('employees'):
+            from employees.models import Employee
+            if self.instance and self.instance.required_skill_id:
+                self.fields['assigned_employee'].queryset = Employee.objects.filter(
+                    status=Employee.Status.ACTIVE,
+                    skills__id=self.instance.required_skill_id
+                ).exclude(user__is_superuser=True).distinct()
+    
+    def save(self, commit=True):
+        stage = super().save(commit=False)
+        
+        # Если модуль employees активен — берём выбранного сотрудника
+        if apps.is_installed('employees'):
+            assigned_employee = self.cleaned_data.get('assigned_employee')
+            if assigned_employee:
+                stage.assigned_employee = assigned_employee
+        else:
+            # Если модуль employees не активен — сохраняем текст в comment
+            assigned_employee_text = self.cleaned_data.get('assigned_employee')
+            if assigned_employee_text:
+                stage.comment = f"Назначенный сотрудник: {assigned_employee_text}\n\n{stage.comment or ''}"
+        
+        if commit:
+            stage.save()
+            self.save_m2m()
+        return stage
 
 
 # =========================================================

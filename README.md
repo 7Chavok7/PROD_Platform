@@ -33,7 +33,6 @@ pip install -r requirements.txt
 
 2. Настройка
 cp .env.example .env
-# Отредактируйте .env (укажите настройки БД, Redis, секретный ключ)
 
 3. Миграции
 python manage.py migrate

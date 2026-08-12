@@ -44,6 +44,20 @@
                     </small>
                 </div>
 
+                <!-- ✅ ОТВЕТСТВЕННЫЙ МЕНЕДЖЕР -->
+                <div class="col-md-6">
+                    <label class="form-label required-field" for="{{ form.responsible_manager.id_for_label }}">
+                        {{ form.responsible_manager.label }}
+                    </label>
+                    {{ form.responsible_manager }}
+                    {% if form.responsible_manager.errors %}
+                        <div class="text-danger small mt-1">{{ form.responsible_manager.errors }}</div>
+                    {% endif %}
+                    {% if not has_employees %}
+                        <small class="text-muted">Введите ФИО ответственного менеджера</small>
+                    {% endif %}
+                </div>
+
                 <!-- СТАТУС -->
                 <div class="col-md-6">
                     <label class="form-label" for="{{ form.status.id_for_label }}">

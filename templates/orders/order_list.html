@@ -5,6 +5,25 @@
 
 {% block extra_css %}
 <link href="{% static 'css/orders.css' %}" rel="stylesheet">
+<style>
+    .order-row:hover {
+        background-color: rgba(13, 110, 253, 0.04);
+        cursor: pointer;
+    }
+    .order-row .badge {
+        font-size: 0.75rem;
+    }
+    .progress-mini {
+        height: 4px;
+        width: 80px;
+        display: inline-block;
+        vertical-align: middle;
+    }
+    .table-cell-actions {
+        white-space: nowrap;
+        width: 1%;
+    }
+</style>
 {% endblock %}
 
 {% block breadcrumb_items %}
@@ -23,7 +42,7 @@
 <div class="card mb-4">
     <div class="card-body">
         <div class="row g-2">
-            <div class="col-md-6">
+            <div class="col-md-4">
                 <input type="text" id="filterSearch" class="form-control form-control-sm" 
                        placeholder="Поиск по номеру, названию..." 
                        value="{{ request.GET.search }}">
@@ -32,77 +51,103 @@
                 <select id="filterStatus" class="form-select form-select-sm">
                     <option value="">Все статусы</option>
                     {% for code, label in statuses %}
-                        <option value="{{ label }}">{{ label }}</option>
+                        <option value="{{ code }}" {% if request.GET.status == code %}selected{% endif %}>
+                            {{ label }}
+                        </option>
                     {% endfor %}
                 </select>
             </div>
             <div class="col-md-3">
                 <select id="filterPriority" class="form-select form-select-sm">
                     <option value="">Все приоритеты</option>
-                    <option value="Высокий">Высокий</option>
-                    <option value="Средний">Средний</option>
-                    <option value="Низкий">Низкий</option>
+                    <option value="high" {% if request.GET.priority == 'high' %}selected{% endif %}>Высокий</option>
+                    <option value="medium" {% if request.GET.priority == 'medium' %}selected{% endif %}>Средний</option>
+                    <option value="low" {% if request.GET.priority == 'low' %}selected{% endif %}>Низкий</option>
                 </select>
+            </div>
+            <div class="col-md-2 d-flex align-items-end">
+                <button type="button" class="btn btn-secondary w-100" id="applyFilterBtn">
+                    <i class="fas fa-search me-2"></i>Найти
+                </button>
             </div>
         </div>
     </div>
 </div>
 
-<!-- СПИСОК ЗАКАЗОВ -->
-<div class="row" id="filterTable">
-    {% for order in orders %}
-    <div class="col-md-6 col-lg-4 order-card-wrapper">
-        <div class="card order-card mb-3" onclick="window.location.href='{% url 'orders:order_detail' order.pk %}'">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <span class="fw-bold">{{ order.number }}</span>
-                <span class="badge badge-status-order {{ order.status }}">
-                    {{ order.get_status_display }}
-                </span>
-            </div>
-            <div class="card-body">
-                <h6 class="card-title">{{ order.name }}</h6>
-                <div class="d-flex justify-content-between align-items-center">
-                    <small class="text-muted">
-                        <i class="fas fa-user me-1"></i>{{ order.customer|default:'—' }}
-                    </small>
-                    <span class="badge badge-priority {{ order.priority }}">
-                        {{ order.get_priority_display }}
-                    </span>
-                </div>
-                <div class="mt-2 small">
-                    <i class="fas fa-calendar me-1"></i>
-                    Сдача: {{ order.planned_completion_date|date:"d.m.Y" }}
-                </div>
-                <div class="mt-2">
-                    <small class="text-muted">
-                        <i class="fas fa-tasks me-1"></i>
-                        {{ order.stages.count }} этапов
-                        <span class="ms-2">
-                            <span class="text-success">{{ order.completed_count }}</span>
-                            / {{ order.stages.count }}
-                        </span>
-                    </small>
-                </div>
-                <div class="mt-2">
-                    <small class="text-muted">
-                        <i class="fas fa-user me-1"></i>
-                        Менеджер: {{ order.responsible_manager.get_full_name|default:order.responsible_manager.username }}
-                    </small>
-                </div>
-            </div>
+<!-- ТАБЛИЦА ЗАКАЗОВ -->
+<div class="card">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0" id="filterTable">
+                <thead class="table-light">
+                    <tr>
+                        <th style="min-width: 130px;">Номер</th>
+                        <th>Заказ</th>
+                        <th style="min-width: 140px;">Заказчик</th>
+                        <th style="min-width: 120px;">Статус</th>
+                        <th style="min-width: 90px;">Приоритет</th>
+                        <th style="min-width: 100px;">Сдача</th>
+                        <th style="min-width: 130px;">Прогресс</th>
+                        <th style="min-width: 140px;">Менеджер</th>
+                        <th style="width: 1%; white-space: nowrap;">Действия</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for order in orders %}
+                    <tr class="order-row" onclick="window.location.href='{% url 'orders:order_detail' order.pk %}'">
+                        <td>
+                            <strong>{{ order.number }}</strong>
+                        </td>
+                        <td>{{ order.name|truncatechars:40 }}</td>
+                        <td>{{ order.customer|default:'—'|truncatechars:20 }}</td>
+                        <td>
+                            <span class="badge badge-status-order {{ order.status }}">
+                                {{ order.get_status_display }}
+                            </span>
+                        </td>
+                        <td>
+                            <span class="badge badge-priority {{ order.priority }}">
+                                {{ order.get_priority_display }}
+                            </span>
+                        </td>
+                        <td>{{ order.planned_completion_date|date:"d.m.Y" }}</td>
+                        <td>
+                            <div class="d-flex align-items-center gap-2">
+                                <span>{{ order.progress }}%</span>
+                                <div class="progress progress-mini">
+                                    <div class="progress-bar bg-success" style="width: {{ order.progress }}%;"></div>
+                                </div>
+                                <span class="text-muted small">
+                                    {{ order.completed_count }}/{{ order.stages.count }}
+                                </span>
+                            </div>
+                        </td>
+                        <td>{{ order.responsible_manager.get_full_name|default:order.responsible_manager.username|truncatechars:15 }}</td>
+                        <td class="table-cell-actions" onclick="event.stopPropagation();">
+                            <a href="{% url 'orders:order_edit' order.pk %}" class="btn btn-sm btn-outline-primary" title="Редактировать">
+                                <i class="fas fa-edit"></i>
+                            </a>
+                            <a href="{% url 'orders:order_detail' order.pk %}" class="btn btn-sm btn-outline-secondary" title="Открыть">
+                                <i class="fas fa-eye"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="9" class="text-center py-4 text-muted">
+                            <i class="fas fa-clipboard-list fa-2x d-block mb-2"></i>
+                            Заказов пока нет
+                            <br>
+                            <a href="{% url 'orders:order_create' %}" class="btn btn-sm btn-primary mt-2">
+                                <i class="fas fa-plus me-2"></i>Создать первый заказ
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
         </div>
     </div>
-    {% empty %}
-    <div class="col-12">
-        <div class="card">
-            <div class="card-body text-center py-5 text-muted">
-                <i class="fas fa-clipboard-list fa-3x d-block mb-3"></i>
-                <h5>Заказов пока нет</h5>
-                <p>Создайте первый заказ, нажав на кнопку выше.</p>
-            </div>
-        </div>
-    </div>
-    {% endfor %}
 </div>
 {% endblock %}
 
@@ -110,7 +155,31 @@
 <script src="{% static 'js/filter.js' %}"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Дополнительная логика для заказов
+    const searchInput = document.getElementById('filterSearch');
+    const statusFilter = document.getElementById('filterStatus');
+    const priorityFilter = document.getElementById('filterPriority');
+    const applyBtn = document.getElementById('applyFilterBtn');
+
+    function applyFilter() {
+        const params = new URLSearchParams();
+        const search = searchInput.value.trim();
+        const status = statusFilter.value;
+        const priority = priorityFilter.value;
+
+        if (search) params.append('search', search);
+        if (status) params.append('status', status);
+        if (priority) params.append('priority', priority);
+
+        window.location.href = '{% url "orders:order_list" %}' + '?' + params.toString();
+    }
+
+    applyBtn.addEventListener('click', applyFilter);
+
+    searchInput.addEventListener('keyup', function(e) {
+        if (e.key === 'Enter') {
+            applyFilter();
+        }
+    });
 });
 </script>
 {% endblock %}

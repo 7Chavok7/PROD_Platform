@@ -62,75 +62,64 @@
         </div>
     </nav>
 
-    <!-- ============================================================ -->
-    <!-- БОКОВОЕ МЕНЮ (САЙДБАР)                                        -->
-    <!-- ============================================================ -->
+    <!-- БОКОВОЕ МЕНЮ (САЙДБАР) -->
     <aside class="sidebar" id="sidebar">
         <nav class="nav flex-column">
 
             <!-- ========================================================== -->
-            <!-- ГРУППА: СПРАВОЧНИКИ                                        -->
-            <!-- ========================================================== -->
-            <div class="nav-item">
-                <a class="nav-link dropdown-toggle" href="#" id="referenceMenu" role="button" data-bs-toggle="collapse" data-bs-target="#referenceSubmenu" aria-expanded="true">
-                    <i class="fas fa-book me-2"></i> Справочники
-                </a>
-                <div class="collapse" id="referenceSubmenu">
-                    <nav class="nav flex-column ps-3">
-                        <a class="nav-link {% if active_menu == 'employees' %}active{% endif %}"
-                           href="{% url 'employees:employee_list' %}">
-                            <i class="fas fa-users me-2"></i> Сотрудники
-                        </a>
-                        <a class="nav-link {% if active_menu == 'departments' %}active{% endif %}"
-                           href="{% url 'employees:department_list' %}">
-                            <i class="fas fa-building me-2"></i> Участки
-                        </a>
-                        <a class="nav-link {% if active_menu == 'skills' %}active{% endif %}"
-                           href="{% url 'employees:skill_list' %}">
-                            <i class="fas fa-star me-2"></i> Навыки
-                        </a>
-                        <a class="nav-link {% if active_menu == 'positions' %}active{% endif %}"
-                           href="{% url 'employees:position_list' %}">
-                            <i class="fas fa-briefcase me-2"></i> Должности
-                        </a>
-                        <a class="nav-link {% if active_menu == 'skill_matrix' %}active{% endif %}"
-                           href="{% url 'employees:skill_matrix' %}">
-                            <i class="fas fa-th me-2"></i> Матрица квалификаций
-                        </a>
-                    </nav>
-                </div>
-            </div>
-
-            <!-- ========================================================== -->
-            <!-- ГРУППА: КОНТРАГЕНТЫ                                         -->
-            <!-- ========================================================== -->
-            <div class="nav-item">
-                <a class="nav-link {% if active_menu == 'customers' %}active{% endif %}"
-                   href="{% url 'customers:customer_list' %}">
-                    <i class="fas fa-handshake me-2"></i> Контрагенты
-                </a>
-            </div>
-
-            <!-- ========================================================== -->
-            <!-- ГРУППА: ЗАКАЗЫ                                             -->
+            <!-- ГРУППА: ЗАКАЗЫ (всегда активен)                            -->
             <!-- ========================================================== -->
             <div class="nav-item">
                 <a class="nav-link {% if active_menu == 'orders' %}active{% endif %}"
-                   href="{% url 'orders:order_list' %}">
+                href="{% url 'orders:order_list' %}">
                     <i class="fas fa-clipboard-list me-2"></i> Заказы
                 </a>
             </div>
 
             <!-- ========================================================== -->
-            <!-- ГРУППА: ОТЧЕТЫ (в будущем)                                 -->
+            <!-- ГРУППА: СПРАВОЧНИКИ (показываем, если есть модули)         -->
             <!-- ========================================================== -->
-            <!--
+            {% if has_employees or has_customers %}
             <div class="nav-item">
-                <a class="nav-link" href="#">
-                    <i class="fas fa-chart-bar me-2"></i> Отчеты
+                <a class="nav-link dropdown-toggle" href="#" id="referenceMenu" role="button" data-bs-toggle="collapse" data-bs-target="#referenceSubmenu" aria-expanded="true">
+                    <i class="fas fa-book me-2"></i> Справочники
                 </a>
+                <div class="collapse show" id="referenceSubmenu">
+                    <nav class="nav flex-column ps-3">
+                        
+                        {% if has_employees %}
+                        <a class="nav-link {% if active_menu == 'employees' %}active{% endif %}"
+                        href="{% url 'employees:employee_list' %}">
+                            <i class="fas fa-users me-2"></i> Сотрудники
+                        </a>
+                        {% endif %}
+                        
+                        {% if has_customers %}
+                        <a class="nav-link {% if active_menu == 'customers' %}active{% endif %}"
+                        href="{% url 'customers:customer_list' %}">
+                            <i class="fas fa-handshake me-2"></i> Контрагенты
+                        </a>
+                        {% endif %}
+
+                        {# Сюда добавятся другие модули, когда появятся #}
+                        {# 
+                        {% if has_warehouse %}
+                        <a class="nav-link" href="#">
+                            <i class="fas fa-warehouse me-2"></i> Склад
+                        </a>
+                        {% endif %}
+                        
+                        {% if has_logistics %}
+                        <a class="nav-link" href="#">
+                            <i class="fas fa-truck me-2"></i> Логистика
+                        </a>
+                        {% endif %}
+                        #}
+                        
+                    </nav>
+                </div>
             </div>
-            -->
+            {% endif %}
 
             <!-- ========================================================== -->
             <!-- ГРУППА: АДМИНИСТРИРОВАНИЕ (только для админа)              -->

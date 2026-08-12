@@ -29,10 +29,15 @@
         </div>
     </div>
     <div class="d-flex gap-2">
+        {% if order.status == 'draft' %}
+        <button class="btn btn-success btn-sm start-order" data-pk="{{ order.pk }}" data-number="{{ order.number }}">
+            <i class="fas fa-play me-1"></i>Запустить
+        </button>
+        {% endif %}
         <a href="{% url 'orders:order_edit' order.pk %}" class="btn btn-outline-primary btn-sm">
             <i class="fas fa-edit me-1"></i>Редактировать
         </a>
-        <button class="btn btn-outline-danger btn-sm delete-order" data-pk="{{ order.pk }}">
+        <button class="btn btn-outline-danger btn-sm delete-order" data-pk="{{ order.pk }}" data-number="{{ order.number }}">
             <i class="fas fa-trash me-1"></i>Удалить
         </button>
     </div>
@@ -83,7 +88,7 @@
                                 </div>
                             </div>
                             <small class="text-muted">
-                                Выполнено {{ order.stages|filter_by_status:'completed'|length }} из {{ order.stages.count }} этапов
+                                Выполнено {{ completed_count }} из {{ order.stages.count }} этапов
                             </small>
                         </div>
                     </div>
@@ -155,8 +160,11 @@
     <!-- ПРАВАЯ КОЛОНКА: ФАЙЛЫ -->
     <div class="col-md-4">
         <div class="card">
-            <div class="card-header">
-                <i class="fas fa-paperclip me-2"></i>Файлы заказа
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span><i class="fas fa-paperclip me-2"></i>Файлы заказа</span>
+                <button type="button" class="btn btn-sm btn-outline-primary" id="uploadFileBtn" data-order-pk="{{ order.pk }}">
+                    <i class="fas fa-upload me-1"></i>Загрузить
+                </button>
             </div>
             <div class="card-body">
                 {% for file in order.files.all %}
@@ -170,11 +178,8 @@
                     <span class="text-muted small">v{{ file.version|default:'1' }}</span>
                 </div>
                 {% empty %}
-                <p class="text-muted small">Файлы не загружены</p>
+                <p class="text-muted small" id="noFilesMessage">Файлы не загружены</p>
                 {% endfor %}
-                <button class="btn btn-sm btn-outline-secondary w-100 mt-2">
-                    <i class="fas fa-upload me-1"></i>Загрузить файл
-                </button>
             </div>
         </div>
     </div>
@@ -183,26 +188,4 @@
 
 {% block extra_js %}
 <script src="{% static 'js/orders.js' %}"></script>
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Удаление заказа
-    const deleteBtn = document.querySelector('.delete-order');
-    if (deleteBtn) {
-        deleteBtn.addEventListener('click', function() {
-            if (confirm('Вы уверены, что хотите удалить заказ {{ order.number }}?')) {
-                fetch('{% url 'orders:order_delete' order.pk %}', {
-                    method: 'POST',
-                    headers: {
-                        'X-CSRFToken': '{{ csrf_token }}',
-                    },
-                }).then(response => {
-                    if (response.ok) {
-                        window.location.href = '{% url 'orders:order_list' %}';
-                    }
-                });
-            }
-        });
-    }
-});
-</script>
 {% endblock %}
