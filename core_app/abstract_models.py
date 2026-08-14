@@ -1,4 +1,4 @@
-# core_app/abstract_models.py / A.Grachev
+# core_app/abstract_models.py | A.Grachev
 from django.db import models
 
 

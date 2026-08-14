@@ -40,18 +40,18 @@ def sync_user_form_employee(sender, instance, created, **kwargs):
         user.save()
         print(f'[Сигнал] Данные пользователя {user.username} синхронизированны с Employee {instance.last_name} {instance.first_name[:1]}')
         
-@receiver(post_save, sender=User)
-def create_employee_from_user(sender, instance, created, **kwargs):
-    """При создании пользователя — создаём анкету сотрудника (только если её нет)"""
-    if created:
-        if not hasattr(instance, 'employee'):
-            Employee.objects.create(
-                user=instance,
-                last_name=instance.last_name or '',
-                first_name=instance.first_name or '',
-                email=instance.email or '',
-                department=None,
-                position=None,
-                status=Employee.Status.ACTIVE
-            )
-            print(f"[Сигнал] Создана пустая анкета для пользователя {instance.username}")
+# @receiver(post_save, sender=User)
+# def create_employee_from_user(sender, instance, created, **kwargs):
+#     """При создании пользователя — создаём анкету сотрудника (только если её нет)"""
+#     if created:
+#         if not hasattr(instance, 'employee'):
+#             Employee.objects.create(
+#                 user=instance,
+#                 last_name=instance.last_name or '',
+#                 first_name=instance.first_name or '',
+#                 email=instance.email or '',
+#                 department=None,
+#                 position=None,
+#                 status=Employee.Status.ACTIVE
+#             )
+#             print(f"[Сигнал] Создана пустая анкета для пользователя {instance.username}")

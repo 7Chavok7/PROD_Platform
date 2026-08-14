@@ -1,3 +1,4 @@
+# employees/apps.py | A.Grachev
 from django.apps import AppConfig
 
 

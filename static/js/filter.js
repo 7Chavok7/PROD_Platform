@@ -1,3 +1,5 @@
+/* static/js/filter.js | A.Grachev */
+// интерактивные фильтры для общего испольщования //
 document.addEventListener('DOMContentLoaded', function() {
     'use strict';
 

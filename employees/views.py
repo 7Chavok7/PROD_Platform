@@ -1,5 +1,9 @@
+# employees/iews.py | A.Grachev
+import json
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required, user_passes_test
+from django.views.decorators.http import require_POST
+from django.db import transaction
 from django.contrib import messages
 from django.db.models import Q
 from django.http import JsonResponse
@@ -74,8 +78,11 @@ def employee_list(request):
 def employee_detail(request, pk):
     """Детальная страница сотрудника"""
     employee = get_object_or_404(Employee, pk=pk)
+    skills = Skill.objects.all().order_by('name')
+    
     context = {
         'employee': employee,
+        'skills': skills,
         'active_menu': 'employees',
         'title': str(employee),
     }
@@ -396,3 +403,67 @@ def skill_matrix(request):
     }
     
     return render(request, 'employees/skill_matrix.html', context)
+
+
+@login_required
+@user_passes_test(is_manager)
+@require_POST
+def employee_add_skill(request, pk):
+    """Добавление навыка сотруднику (AJAX)"""
+    employee = get_object_or_404(Employee, pk=pk)
+    
+    try:
+        import json
+        data = json.loads(request.body)
+        skill_id = data.get('skill_id')
+        level = data.get('level', 1)
+        
+        if not skill_id:
+            return JsonResponse({'success': False, 'error': 'Навык не указан'})
+        
+        skill = get_object_or_404(Skill, pk=skill_id)
+        
+        # Проверяем, есть ли уже такой навык
+        employee_skill, created = EmployeeSkill.objects.get_or_create(
+            employee=employee,
+            skill=skill,
+            defaults={'level': level}
+        )
+        
+        if not created:
+            # Обновляем уровень
+            employee_skill.level = level
+            employee_skill.save()
+        
+        return JsonResponse({
+            'success': True,
+            'skill_id': skill.pk,
+            'skill_name': skill.name,
+            'level': level
+        })
+        
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)})
+
+
+@login_required
+@user_passes_test(is_manager)
+@require_POST
+def employee_remove_skill(request, pk):
+    """Удаление навыка у сотрудника (AJAX)"""
+    employee = get_object_or_404(Employee, pk=pk)
+    
+    try:
+        import json
+        data = json.loads(request.body)
+        skill_id = data.get('skill_id')
+        
+        if not skill_id:
+            return JsonResponse({'success': False, 'error': 'Навык не указан'})
+        
+        employee.employeeskill_set.filter(skill_id=skill_id).delete()
+        
+        return JsonResponse({'success': True})
+        
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)})

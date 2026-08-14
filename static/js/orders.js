@@ -1,3 +1,4 @@
+/* static/js/orders.js | A.Grachev */
 // Заказы — интерактивность
 document.addEventListener('DOMContentLoaded', function() {
     'use strict';

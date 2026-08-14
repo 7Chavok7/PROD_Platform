@@ -5,6 +5,10 @@ from . import views
 app_name = 'employees'
 
 urlpatterns = [
+    # AJAX-эндпоинты для управления навыками
+    path('<int:pk>/add-skill/', views.employee_add_skill, name='employee_add_skill'),
+    path('<int:pk>/remove-skill/', views.employee_remove_skill, name='employee_remove_skill'),
+    
     # Сотрудники
     path('', views.employee_list, name='employee_list'),
     path('<int:pk>/', views.employee_detail, name='employee_detail'),
@@ -31,5 +35,6 @@ urlpatterns = [
     path('positions/<int:pk>/delete/', views.position_delete, name='position_delete'),
     
     # Матрица квалификаций
-    path('skill-matrix', views.skill_matrix, name='skill_matrix'),    
+    path('skill-matrix/', views.skill_matrix, name='skill_matrix'),    
+    
 ]

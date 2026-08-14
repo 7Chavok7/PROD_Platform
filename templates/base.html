@@ -79,7 +79,7 @@
             <!-- ========================================================== -->
             <!-- ГРУППА: СПРАВОЧНИКИ (показываем, если есть модули)         -->
             <!-- ========================================================== -->
-            {% if has_employees or has_customers %}
+             {% if has_employees or has_customers %}
             <div class="nav-item">
                 <a class="nav-link dropdown-toggle" href="#" id="referenceMenu" role="button" data-bs-toggle="collapse" data-bs-target="#referenceSubmenu" aria-expanded="true">
                     <i class="fas fa-book me-2"></i> Справочники
@@ -87,34 +87,46 @@
                 <div class="collapse show" id="referenceSubmenu">
                     <nav class="nav flex-column ps-3">
                         
+                        <!-- ===== МОДУЛЬ: employees ===== -->
                         {% if has_employees %}
-                        <a class="nav-link {% if active_menu == 'employees' %}active{% endif %}"
-                        href="{% url 'employees:employee_list' %}">
-                            <i class="fas fa-users me-2"></i> Сотрудники
-                        </a>
+                            <!-- Сотрудники -->
+                            <a class="nav-link {% if active_menu == 'employees' %}active{% endif %}"
+                            href="{% url 'employees:employee_list' %}">
+                                <i class="fas fa-users me-2"></i> Сотрудники
+                            </a>
+                            
+                            <!-- Участки -->
+                            <a class="nav-link {% if active_menu == 'departments' %}active{% endif %}"
+                            href="{% url 'employees:department_list' %}">
+                                <i class="fas fa-building me-2"></i> Участки
+                            </a>
+                            
+                            <!-- Навыки -->
+                            <a class="nav-link {% if active_menu == 'skills' %}active{% endif %}"
+                            href="{% url 'employees:skill_list' %}">
+                                <i class="fas fa-star me-2"></i> Навыки
+                            </a>
+                            
+                            <!-- Должности -->
+                            <a class="nav-link {% if active_menu == 'positions' %}active{% endif %}"
+                            href="{% url 'employees:position_list' %}">
+                                <i class="fas fa-briefcase me-2"></i> Должности
+                            </a>
+                            
+                            <!-- Матрица квалификаций -->
+                            <a class="nav-link {% if active_menu == 'skill_matrix' %}active{% endif %}"
+                            href="{% url 'employees:skill_matrix' %}">
+                                <i class="fas fa-th me-2"></i> Матрица квалификаций
+                            </a>
                         {% endif %}
                         
+                        <!-- ===== МОДУЛЬ: customers ===== -->
                         {% if has_customers %}
-                        <a class="nav-link {% if active_menu == 'customers' %}active{% endif %}"
-                        href="{% url 'customers:customer_list' %}">
-                            <i class="fas fa-handshake me-2"></i> Контрагенты
-                        </a>
+                            <a class="nav-link {% if active_menu == 'customers' %}active{% endif %}"
+                            href="{% url 'customers:customer_list' %}">
+                                <i class="fas fa-handshake me-2"></i> Контрагенты
+                            </a>
                         {% endif %}
-
-                        {# Сюда добавятся другие модули, когда появятся #}
-                        {# 
-                        {% if has_warehouse %}
-                        <a class="nav-link" href="#">
-                            <i class="fas fa-warehouse me-2"></i> Склад
-                        </a>
-                        {% endif %}
-                        
-                        {% if has_logistics %}
-                        <a class="nav-link" href="#">
-                            <i class="fas fa-truck me-2"></i> Логистика
-                        </a>
-                        {% endif %}
-                        #}
                         
                     </nav>
                 </div>

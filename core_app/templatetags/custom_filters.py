@@ -1,4 +1,4 @@
-# core_app/templatetags/custom_filters.py
+# core_app/templatetags/custom_filters.py | A.Grachev
 from django import template
 
 register = template.Library()

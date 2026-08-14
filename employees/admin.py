@@ -110,5 +110,5 @@ class EmployeeAdmin(SimpleHistoryAdmin):
     )
     
     def short_name_display(self, obj):
-        return obj.short_name()
+        return obj.short_name
     short_name_display.short_description = 'ФИО'

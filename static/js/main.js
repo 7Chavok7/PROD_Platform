@@ -1,8 +1,4 @@
-/**
- * ProdPlatform — Основной JavaScript
- * Автор: A.Grachev
- * Версия: 0.3
- */
+/* static/js/main.js | A.Grachev */
 
 document.addEventListener('DOMContentLoaded', function() {
     'use strict';
