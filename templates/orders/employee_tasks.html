@@ -1,0 +1,212 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .task-card {
+        border-left: 4px solid #0d6efd;
+        transition: box-shadow 0.2s;
+        margin-bottom: 16px;
+    }
+    .task-card:hover {
+        box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+    }
+    .task-card .card-header {
+        background-color: transparent;
+        border-bottom: 1px solid #e9ecef;
+    }
+    .task-card .card-body {
+        padding: 16px 20px;
+    }
+    .task-actions .btn {
+        min-width: 100px;
+    }
+    .task-files a {
+        text-decoration: none;
+    }
+    .task-files a:hover {
+        text-decoration: underline;
+    }
+    .badge-status-task {
+        font-size: 0.8rem;
+        padding: 4px 12px;
+    }
+    .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+    }
+    .empty-state i {
+        font-size: 4rem;
+        color: #dee2e6;
+        margin-bottom: 20px;
+    }
+</style>
+{% endblock %}
+
+{% block breadcrumb_items %}
+<li class="breadcrumb-item active">{{ title }}</li>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1><i class="fas fa-tasks text-primary me-2"></i>{{ title }}</h1>
+    <span class="text-muted">Сотрудник: {{ employee.full_name }}</span>
+</div>
+
+{% if error %}
+<div class="alert alert-warning">
+    <i class="fas fa-exclamation-triangle me-2"></i>{{ error }}
+</div>
+{% endif %}
+
+{% if stages %}
+    <div class="row">
+        {% for stage in stages %}
+        <div class="col-md-6 col-lg-4">
+            <div class="card task-card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span class="fw-bold">{{ stage.order.number }}</span>
+                    <span class="badge bg-{% if stage.status == 'pending' %}secondary{% elif stage.status == 'assigned' %}primary{% elif stage.status == 'in_progress' %}info{% elif stage.status == 'completed' %}success{% elif stage.status == 'defect' %}danger{% elif stage.status == 'problem' %}warning{% else %}light{% endif %} badge-status-task">
+                        {{ stage.get_status_display }}
+                    </span>
+                </div>
+                <div class="card-body">
+                    <h5 class="card-title">{{ stage.name }}</h5>
+                    <p class="card-text small text-muted">
+                        <i class="fas fa-clipboard me-1"></i>{{ stage.order.name }}
+                        <br>
+                        <i class="fas fa-building me-1"></i>{{ stage.department|default:'—' }}
+                    </p>
+
+                    <!-- Чертежи -->
+                    <div class="task-files mb-2">
+                        {% if stage.files.all %}
+                            <small class="text-muted d-block">Чертежи:</small>
+                            {% for file in stage.files.all %}
+                                <a href="{{ file.file.url }}" target="_blank" class="badge bg-light text-dark me-1">
+                                    <i class="fas fa-file-pdf me-1"></i>{{ file.name }}
+                                </a>
+                            {% endfor %}
+                        {% else %}
+                            <small class="text-muted">Чертежи не загружены</small>
+                        {% endif %}
+                    </div>
+
+                    <!-- Кнопки действий -->
+                    <div class="task-actions mt-3">
+                        {% if stage.status == 'assigned' %}
+                            <form method="post" action="{% url 'orders:stage_start' stage.pk %}" class="d-inline">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-success btn-sm">
+                                    <i class="fas fa-play me-1"></i>Приступил
+                                </button>
+                            </form>
+                        {% elif stage.status == 'in_progress' %}
+                            <div class="d-flex flex-wrap gap-1">
+                                <form method="post" action="{% url 'orders:stage_complete' stage.pk %}" class="d-inline">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-success btn-sm" onclick="return confirm('Завершить этап?')">
+                                        <i class="fas fa-check me-1"></i>Завершил
+                                    </button>
+                                </form>
+                                <button type="button" class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#defectModal{{ stage.pk }}">
+                                    <i class="fas fa-exclamation-triangle me-1"></i>Брак
+                                </button>
+                                <button type="button" class="btn btn-warning btn-sm" data-bs-toggle="modal" data-bs-target="#problemModal{{ stage.pk }}">
+                                    <i class="fas fa-question-circle me-1"></i>Проблема
+                                </button>
+                            </div>
+                        {% elif stage.status == 'completed' %}
+                            <span class="text-success"><i class="fas fa-check-circle me-1"></i>Выполнен</span>
+                        {% elif stage.status == 'defect' %}
+                            <span class="text-danger"><i class="fas fa-exclamation-circle me-1"></i>Брак</span>
+                        {% elif stage.status == 'problem' %}
+                            <span class="text-warning"><i class="fas fa-exclamation-triangle me-1"></i>Проблема</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Модалка для Брака -->
+        <div class="modal fade" id="defectModal{{ stage.pk }}" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <form method="post" action="{% url 'orders:stage_defect' stage.pk %}">
+                        {% csrf_token %}
+                        <div class="modal-header">
+                            <h5 class="modal-title">Сообщить о браке</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="mb-3">
+                                <label class="form-label">Описание брака</label>
+                                <textarea name="defect_description" class="form-control" rows="3" placeholder="Что пошло не так?" required></textarea>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Испорченный материал (если есть)</label>
+                                <input type="text" name="defect_material" class="form-control" placeholder="Например: Сталь 45, 10 кг">
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                            <button type="submit" class="btn btn-danger">Отправить</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Модалка для Проблемы -->
+        <div class="modal fade" id="problemModal{{ stage.pk }}" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <form method="post" action="{% url 'orders:stage_problem' stage.pk %}">
+                        {% csrf_token %}
+                        <div class="modal-header">
+                            <h5 class="modal-title">Сообщить о проблеме</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="mb-3">
+                                <label class="form-label">Описание проблемы</label>
+                                <textarea name="problem_description" class="form-control" rows="3" placeholder="Что случилось?" required></textarea>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                            <button type="submit" class="btn btn-warning">Отправить</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+{% else %}
+    <div class="empty-state">
+        <i class="fas fa-check-circle text-success"></i>
+        <h3>У вас пока нет задач</h3>
+        <p class="text-muted">Когда менеджер назначит вас на этап, он появится здесь.</p>
+    </div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Автоматическое скрытие уведомлений через 5 секунд
+    setTimeout(function() {
+        const alerts = document.querySelectorAll('.alert');
+        alerts.forEach(function(alert) {
+            const closeBtn = alert.querySelector('.btn-close');
+            if (closeBtn) {
+                closeBtn.click();
+            }
+        });
+    }, 5000);
+});
+</script>
+{% endblock %}

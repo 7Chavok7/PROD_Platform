@@ -38,8 +38,10 @@ class SkillAdmin(SimpleHistoryAdmin):
 class PositionAdmin(SimpleHistoryAdmin):
     list_display = [
         'name',
-        'code'
+        'code',
+        'access_level'
     ]
+    list_filter = ['access_level']
     search_fields = [
         'name',
         'code'

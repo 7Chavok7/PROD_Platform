@@ -21,13 +21,15 @@
 
 <body>
 
-    <!-- НАВИГАЦИЯ (ШАПКА) -->
+    <!-- ============================================================ -->
+    <!-- НАВИГАЦИЯ (ШАПКА)                                              -->
+    <!-- ============================================================ -->
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
         <div class="container-fluid">
             <button class="navbar-toggler border-0 me-2" type="button" id="sidebarToggle">
                 <span class="navbar-toggler-icon"></span>
             </button>
-            <a class="navbar-brand" href="{% url "employees:employee_list" %}">
+            <a class="navbar-brand" href="{% url "employees:home" %}">
                 <i class="fas fa-industry me-2"></i> ProdPlatform
             </a>
 
@@ -67,21 +69,36 @@
         <nav class="nav flex-column">
 
             <!-- ========================================================== -->
-            <!-- ГРУППА: ЗАКАЗЫ (всегда активен)                            -->
+            <!-- 1. МОИ ЗАДАЧИ (ДЛЯ СОТРУДНИКОВ И МАСТЕРОВ)                -->
             <!-- ========================================================== -->
+            {% if user.employee and user.employee.get_access_level in 'employee,master' %}
+            <div class="nav-item">
+                <a class="nav-link {% if active_menu == 'employee_tasks' %}active{% endif %}" 
+                href="{% url 'orders:employee_tasks' %}">
+                    <i class="fas fa-tasks me-2"></i> Мои задачи
+                </a>
+            </div>
+            {% endif %}
+
+            <!-- ========================================================== -->
+            <!-- 2. ЗАКАЗЫ (ДЛЯ ВСЕХ, КРОМЕ ОБЫЧНЫХ СОТРУДНИКОВ)           -->
+            <!-- ========================================================== -->
+            {% if user.is_superuser or not user.employee or user.employee.get_access_level not in 'employee' %}
             <div class="nav-item">
                 <a class="nav-link {% if active_menu == 'orders' %}active{% endif %}"
                 href="{% url 'orders:order_list' %}">
                     <i class="fas fa-clipboard-list me-2"></i> Заказы
                 </a>
             </div>
+            {% endif %}
 
             <!-- ========================================================== -->
-            <!-- ГРУППА: СПРАВОЧНИКИ (показываем, если есть модули)         -->
+            <!-- 3. СПРАВОЧНИКИ (ДЛЯ МЕНЕДЖЕРОВ, ДИРЕКТОРОВ, АДМИНОВ И СУПЕРПОЛЬЗОВАТЕЛЯ) -->
             <!-- ========================================================== -->
-             {% if has_employees or has_customers %}
+            {% if user.is_superuser or user.employee and user.employee.get_access_level in 'manager,director,admin' %}
             <div class="nav-item">
-                <a class="nav-link dropdown-toggle" href="#" id="referenceMenu" role="button" data-bs-toggle="collapse" data-bs-target="#referenceSubmenu" aria-expanded="true">
+                <a class="nav-link dropdown-toggle" href="#" id="referenceMenu" role="button" 
+                data-bs-toggle="collapse" data-bs-target="#referenceSubmenu" aria-expanded="true">
                     <i class="fas fa-book me-2"></i> Справочники
                 </a>
                 <div class="collapse show" id="referenceSubmenu">
@@ -134,7 +151,7 @@
             {% endif %}
 
             <!-- ========================================================== -->
-            <!-- ГРУППА: АДМИНИСТРИРОВАНИЕ (только для админа)              -->
+            <!-- 4. АДМИНИСТРИРОВАНИЕ (ТОЛЬКО ДЛЯ СУПЕРПОЛЬЗОВАТЕЛЯ)       -->
             <!-- ========================================================== -->
             {% if user.is_superuser %}
             <div class="nav-item">
@@ -155,7 +172,7 @@
         {% block breadcrumbs %}
         <nav aria-label="breadcrumb">
             <ol class="breadcrumb">
-                <li class="breadcrumb-item"><a href="{% url 'employees:employee_list' %}">Главная</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'employees:home' %}">Главная</a></li>
                 {% block breadcrumb_items %}{% endblock %}
             </ol>
         </nav>

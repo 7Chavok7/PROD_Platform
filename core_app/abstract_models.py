@@ -24,6 +24,14 @@ class BaseWorker(models.Model):
     def __str__(self):
         return self.full_name
     
+    def get_access_level(self):
+        """
+        Возвращает уровень доступа сотрудника.
+        Должен быть переопределен в конкретной модели (Employee).
+        По умолчанию - 'employee' (только свои задачи)
+        """
+        return 'employee'
+    
     
 class BaseCustomer(models.Model):
     """

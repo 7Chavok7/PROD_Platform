@@ -3,10 +3,20 @@ from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib import messages
 from django.db.models import Q, Count
 from django.db import transaction
+from django.utils import timezone
 from django.apps import apps
-from .models import Order, Stage, Drawing, OrderFile
-from .forms import OrderForm, StageForm, DrawingForm, OrderFileForm
+from .models import (
+    Order, 
+    Stage, 
+    Drawing, 
+    OrderFile)
+from .forms import (
+    OrderForm, 
+    StageForm, 
+    DrawingForm, 
+    OrderFileForm)
 from .services import OrderProgressService
+from employees.models import Employee
 
 
 def is_manager(user):
@@ -283,3 +293,130 @@ def drawing_delete(request, order_pk, stage_pk, pk):
         'active_menu': 'orders',
     }
     return render(request, 'orders/drawing_confirm_delete.html', context)
+
+
+# =========================================================
+# =   ЛИЧНЫЙ КАБИНЕТ СОТРУДНИКА                           =
+# =========================================================
+
+@login_required
+def employee_tasks(request):
+    """Личный кабинет сотруднкиа: список его задач"""
+    # Проверяем, есть ли у пользователя анкета сотрудника
+    try:
+        employee = request.user.employee
+    except Employee.DoesNotExist:
+        return render(request, 'orders/employee_tasks.html', {
+            'error': 'Анкета сотрудника не заполнена. Обратитесь к администратору'
+        })
+        
+    # Получаем уровень доступа из должности (через абстракцию).
+    access_level = employee.get_access_level()
+    
+    # Если у сотрудника уровень доступа 'employee' или 'master' - показываем задачи.
+    if access_level in ['employee', 'master']:
+        # Базовый запрос: задачи, назначенные на этого сотрудника
+        stages = Stage.objects.filter(
+            assigned_employee=employee
+        ).select_related('order', 'department', 'required_skill').order_by('planned_start_date')
+        
+        # Если мастер - показываем задачи всего участка
+        if access_level == 'master' and employee.department:
+            stages = Stage.objects.filter(
+                department=employee.department
+            ).exclude(
+                assigned_employee=employee
+            ).select_related('order', 'department', 'required_skill').order_by('planned_start_date')
+            
+    # Если у сотруднкка другой уровень доступа - редирект (или ошибка)
+    else:
+        return redirect('orders:order_list')
+    
+    context = {
+        'stages': stages,
+        'employee': employee,
+        'access_level': access_level,
+        'active_menu': 'employee_tasks',
+        'title': 'Мои задачи'
+    }
+    return render(request, 'orders/employee_tasks.html', context)
+
+
+# ==========================================================
+# = ДЕЙСТВИЯ СОТРУДНИКА (START, COMPLETE, DEFECT, PROBLEM) =
+# ==========================================================
+
+@login_required
+def stage_start(request, pk):
+    """Сотрудник начинает работу над этапом"""
+    stage = get_object_or_404(Stage, pk=pk, assigned_employee=request.user.employee)
+
+    if stage.status == Stage.Status.ASSIGNED:
+        stage.status = Stage.Status.IN_PROGRESS
+        stage.actual_start_date = timezone.now().date()
+        stage.save()
+        messages.success(request, f'Этап "{stage.name}" начат!')
+    else:
+        messages.error(request, 'Этот этап уже в работе или завершён')
+
+    return redirect('orders:employee_tasks')
+
+
+@login_required
+def stage_complete(request, pk):
+    """Сотрудник завершает этап"""
+    stage = get_object_or_404(Stage, pk=pk, assigned_employee=request.user.employee)
+
+    if stage.status == Stage.Status.IN_PROGRESS:
+        stage.status = Stage.Status.COMPLETED
+        stage.actual_finish_date = timezone.now().date()
+        stage.save()
+        messages.success(request, f'Этап "{stage.name}" завершён!')
+    else:
+        messages.error(request, 'Этот этап нельзя завершить')
+
+    return redirect('orders:employee_tasks')
+
+
+@login_required
+def stage_defect(request, pk):
+    """Сотрудник сообщает о браке"""
+    stage = get_object_or_404(Stage, pk=pk, assigned_employee=request.user.employee)
+
+    if request.method == 'POST':
+        description = request.POST.get('defect_description')
+        material = request.POST.get('defect_material', '')
+
+        if not description:
+            messages.error(request, 'Опишите брак')
+            return redirect('orders:employee_tasks')
+
+        # Меняем статус и сохраняем комментарий
+        stage.status = Stage.Status.DEFECT
+        stage.comment = f"Брак: {description}. Материал: {material}"
+        stage.save()
+
+        messages.warning(request, f'Брак зафиксирован на этапе "{stage.name}"')
+
+    return redirect('orders:employee_tasks')
+
+
+@login_required
+def stage_problem(request, pk):
+    """Сотрудник сообщает о проблеме"""
+    stage = get_object_or_404(Stage, pk=pk, assigned_employee=request.user.employee)
+
+    if request.method == 'POST':
+        description = request.POST.get('problem_description')
+
+        if not description:
+            messages.error(request, 'Опишите проблему')
+            return redirect('orders:employee_tasks')
+
+        stage.status = Stage.Status.PROBLEM
+        stage.comment = f"Проблема: {description}"
+        stage.save()
+
+        messages.warning(request, f'Проблема зафиксирована на этапе "{stage.name}"')
+
+    return redirect('orders:employee_tasks')

@@ -83,17 +83,17 @@ class EmployeeForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         
-        # ✅ Поле user НЕ ОБЯЗАТЕЛЬНО
+        # Поле user НЕ ОБЯЗАТЕЛЬНО
         self.fields['user'].required = False
         
-        # ✅ ПОКАЗЫВАЕМ ВСЕХ ПОЛЬЗОВАТЕЛЕЙ (без фильтрации)
+        # ПОКАЗЫВАЕМ ВСЕХ ПОЛЬЗОВАТЕЛЕЙ (без фильтрации)
         # (валидация будет в clean_user)
         
         # Если редактируем существующего сотрудника — показываем его логин
         if self.instance and self.instance.pk and self.instance.user:
             self.fields['username'].initial = self.instance.user.username
             self.fields['username'].help_text = 'Текущий логин: {}'.format(self.instance.user.username)
-            # ✅ Если у сотрудника уже есть пользователь, скрываем поля создания
+            # Если у сотрудника уже есть пользователь, скрываем поля создания
             self.fields['username'].widget = forms.HiddenInput()
             self.fields['password'].widget = forms.HiddenInput()
             self.fields['password_confirm'].widget = forms.HiddenInput()
@@ -136,15 +136,15 @@ class EmployeeForm(forms.ModelForm):
         password_confirm = cleaned_data.get('password_confirm')
         user = cleaned_data.get('user')
         
-        # ✅ Если выбран существующий пользователь — всё ок
+        # Если выбран существующий пользователь — всё ок
         if user:
             return cleaned_data
         
-        # ✅ Если пользователь не выбран и логин не введён — создаём сотрудника без пользователя
+        # Если пользователь не выбран и логин не введён — создаём сотрудника без пользователя
         if not username:
             return cleaned_data
         
-        # ✅ Если логин введён — проверяем и создаём пользователя
+        # Если логин введён — проверяем и создаём пользователя
         if User.objects.filter(username=username).exists():
             self.add_error('username', 'Пользователь с таким логином уже существует')
             return cleaned_data
@@ -167,7 +167,7 @@ class EmployeeForm(forms.ModelForm):
         password = self.cleaned_data.get('password')
         user = self.cleaned_data.get('user')
         
-        # ✅ Если указан логин и не выбран существующий пользователь — создаём нового
+        # Если указан логин и не выбран существующий пользователь — создаём нового
         if username and not user:
             user = User.objects.create_user(
                 username=username,
@@ -180,7 +180,7 @@ class EmployeeForm(forms.ModelForm):
             user.save()
             instance.user = user
         
-        # ✅ Явно сохраняем personal_number
+        # Явно сохраняем personal_number
         instance.personal_number = self.cleaned_data.get('personal_number')
         
         if commit:
@@ -247,13 +247,17 @@ class PositionForm(forms.ModelForm):
         model = Position
         fields = [
             'name', 
-            'code'
+            'code',
+            'access_level'
         ]
         widgets = {
             'name': forms.TextInput(
-                attrs={'class': 'form-control'}
-            ),
+                attrs={'class': 'form-control'
+            }),
             'code': forms.TextInput(
-                attrs={'class': 'form-control'}
-            ),
+                attrs={'class': 'form-control'
+            }),
+            'access_level': forms.Select(attrs={
+                'class': 'form-select'
+            }),
         }

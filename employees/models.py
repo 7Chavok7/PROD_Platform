@@ -87,6 +87,14 @@ class Skill(models.Model):
     
 class Position(models.Model):
     """Должности"""
+    
+    class AccessLevel(models.TextChoices):
+        EMPLOYEE = 'employee', 'Сотрудник (только свои задачи)'
+        MASTER = 'master', 'Мастер (задачи своего участка)'
+        MANAGER = 'manager', 'Менеджер (все заказы)'
+        DIRECTOR = 'director', 'Директор (все заказы + отчеты)'
+        ADMIN = 'admin', 'Администратор (полный доступ)'
+    
     name = models.CharField(
         max_length=50,
         verbose_name='Наименование должности'    
@@ -95,6 +103,12 @@ class Position(models.Model):
         max_length=6,
         verbose_name='Код должности',
         help_text='Максимум 6 символов. Например ОС-001'
+    )
+    access_level = models.CharField(
+        max_length=20,
+        choices=AccessLevel.choices,
+        default=AccessLevel.EMPLOYEE,
+        verbose_name='Уровень доступа'
     )
     
     # История изменений
@@ -228,6 +242,12 @@ class Employee(BaseWorker):
                 self.short_name = f'{self.last_name} {self.first_name[:1]}.'
         
         super().save(*args, **kwargs)
+        
+    def get_access_level(self):
+        """Возвращает уровень доступа из должности"""
+        if self.position and self.position.access_level:
+            return self.position.access_level
+        return 'employee'
         
         
 class EmployeeSkill(models.Model):

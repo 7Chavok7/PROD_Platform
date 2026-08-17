@@ -37,4 +37,6 @@ urlpatterns = [
     # Матрица квалификаций
     path('skill-matrix/', views.skill_matrix, name='skill_matrix'),    
     
+    # Главная страница (редирект по ролям)
+    path('', views.home_redirect, name='home'),
 ]

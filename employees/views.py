@@ -305,6 +305,7 @@ def skill_delete(request, pk):
 @login_required
 @user_passes_test(is_manager)
 def position_list(request):
+    """Список должностей"""
     positions = Position.objects.all()
     context = {
         'positions': positions,
@@ -317,6 +318,7 @@ def position_list(request):
 @login_required
 @user_passes_test(is_manager)
 def position_create(request):
+    """Создание должности"""
     if request.method == 'POST':
         form = PositionForm(request.POST)
         if form.is_valid():
@@ -337,6 +339,7 @@ def position_create(request):
 @login_required
 @user_passes_test(is_manager)
 def position_edit(request, pk):
+    """Редактирование должности"""
     position = get_object_or_404(Position, pk=pk)
     if request.method == 'POST':
         form = PositionForm(request.POST, instance=position)
@@ -359,6 +362,7 @@ def position_edit(request, pk):
 @login_required
 @user_passes_test(is_manager)
 def position_delete(request, pk):
+    """Удаление должности"""
     position = get_object_or_404(Position, pk=pk)
     if request.method == 'POST':
         position.delete()
@@ -467,3 +471,38 @@ def employee_remove_skill(request, pk):
         
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)})
+    
+    
+# =========================================================
+# =   ГЛАВНАЯ СТРАНИЦА (РЕДИРЕКТ ПО РОЛЯМ)                =
+# =========================================================
+@login_required
+def home_redirect(request):
+    """Перенаправляет пользователя на его рабочую страницу в зависимости от роли"""
+    user = request.user
+    
+    # Если пользователь — сотрудник (есть анкета)
+    if hasattr(user, 'employee') and user.employee:
+        employee = user.employee
+        access_level = employee.get_access_level()
+        
+        # Сотрудник → Мои задачи
+        if access_level == 'employee':
+            return redirect('orders:employee_tasks')
+        
+        # Мастер → Задачи участка (пока что тоже в Мои задачи, но позже сделаем отдельно)
+        elif access_level == 'master':
+            # TODO: сделать отдельную страницу для мастера
+            return redirect('orders:employee_tasks')
+        
+        # Директор → Дашборд (пока нет, редирект на список заказов)
+        elif access_level == 'director' or access_level == 'admin':
+            # TODO: сделать дашборд для директора
+            return redirect('orders:order_list')
+        
+        # Менеджер → Список заказов
+        elif access_level == 'manager':
+            return redirect('orders:order_list')
+    
+    # Если у пользователя нет роли — редирект на список заказов (как менеджер)
+    return redirect('orders:order_list')
