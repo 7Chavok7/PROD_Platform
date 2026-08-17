@@ -20,7 +20,6 @@
 </head>
 
 <body>
-
     <!-- ============================================================ -->
     <!-- НАВИГАЦИЯ (ШАПКА)                                              -->
     <!-- ============================================================ -->
@@ -29,7 +28,7 @@
             <button class="navbar-toggler border-0 me-2" type="button" id="sidebarToggle">
                 <span class="navbar-toggler-icon"></span>
             </button>
-            <a class="navbar-brand" href="{% url "employees:home" %}">
+            <a class="navbar-brand" href="{% url "home" %}">
                 <i class="fas fa-industry me-2"></i> ProdPlatform
             </a>
 
@@ -64,7 +63,9 @@
         </div>
     </nav>
 
-    <!-- БОКОВОЕ МЕНЮ (САЙДБАР) -->
+    <!-- ============================================================ -->
+    <!-- БОКОВОЕ МЕНЮ (САЙДБАР)                                        -->
+    <!-- ============================================================ -->
     <aside class="sidebar" id="sidebar">
         <nav class="nav flex-column">
 
@@ -74,7 +75,7 @@
             {% if user.employee and user.employee.get_access_level in 'employee,master' %}
             <div class="nav-item">
                 <a class="nav-link {% if active_menu == 'employee_tasks' %}active{% endif %}" 
-                href="{% url 'orders:employee_tasks' %}">
+                   href="{% url 'orders:employee_tasks' %}">
                     <i class="fas fa-tasks me-2"></i> Мои задачи
                 </a>
             </div>
@@ -86,7 +87,7 @@
             {% if user.is_superuser or not user.employee or user.employee.get_access_level not in 'employee' %}
             <div class="nav-item">
                 <a class="nav-link {% if active_menu == 'orders' %}active{% endif %}"
-                href="{% url 'orders:order_list' %}">
+                   href="{% url 'orders:order_list' %}">
                     <i class="fas fa-clipboard-list me-2"></i> Заказы
                 </a>
             </div>
@@ -97,56 +98,72 @@
             <!-- ========================================================== -->
             {% if user.is_superuser or user.employee and user.employee.get_access_level in 'manager,director,admin' %}
             <div class="nav-item">
-                <a class="nav-link dropdown-toggle" href="#" id="referenceMenu" role="button" 
-                data-bs-toggle="collapse" data-bs-target="#referenceSubmenu" aria-expanded="true">
+                <a class="nav-link dropdown-toggle" 
+                   href="#" id="referenceMenu" role="button" 
+                   data-bs-toggle="collapse" data-bs-target="#referenceSubmenu" aria-expanded="true">
                     <i class="fas fa-book me-2"></i> Справочники
                 </a>
                 <div class="collapse show" id="referenceSubmenu">
                     <nav class="nav flex-column ps-3">
                         
-                        <!-- ===== МОДУЛЬ: employees ===== -->
+                        <!-- ===== МОДУЛЬ: employees (кадры) ===== -->
                         {% if has_employees %}
                             <!-- Сотрудники -->
                             <a class="nav-link {% if active_menu == 'employees' %}active{% endif %}"
-                            href="{% url 'employees:employee_list' %}">
+                               href="{% url 'employees:employee_list' %}">
                                 <i class="fas fa-users me-2"></i> Сотрудники
                             </a>
                             
                             <!-- Участки -->
                             <a class="nav-link {% if active_menu == 'departments' %}active{% endif %}"
-                            href="{% url 'employees:department_list' %}">
+                               href="{% url 'employees:department_list' %}">
                                 <i class="fas fa-building me-2"></i> Участки
                             </a>
                             
                             <!-- Навыки -->
                             <a class="nav-link {% if active_menu == 'skills' %}active{% endif %}"
-                            href="{% url 'employees:skill_list' %}">
+                               href="{% url 'employees:skill_list' %}">
                                 <i class="fas fa-star me-2"></i> Навыки
                             </a>
                             
                             <!-- Должности -->
                             <a class="nav-link {% if active_menu == 'positions' %}active{% endif %}"
-                            href="{% url 'employees:position_list' %}">
+                               href="{% url 'employees:position_list' %}">
                                 <i class="fas fa-briefcase me-2"></i> Должности
                             </a>
                             
                             <!-- Матрица квалификаций -->
                             <a class="nav-link {% if active_menu == 'skill_matrix' %}active{% endif %}"
-                            href="{% url 'employees:skill_matrix' %}">
+                               href="{% url 'employees:skill_matrix' %}">
                                 <i class="fas fa-th me-2"></i> Матрица квалификаций
                             </a>
                         {% endif %}
                         
-                        <!-- ===== МОДУЛЬ: customers ===== -->
-                        {% if has_customers %}
-                            <a class="nav-link {% if active_menu == 'customers' %}active{% endif %}"
-                            href="{% url 'customers:customer_list' %}">
-                                <i class="fas fa-handshake me-2"></i> Контрагенты
-                            </a>
-                        {% endif %}
                         
                     </nav>
                 </div>
+                <!-- ===== МОДУЛЬ: customers (контрагенты) ===== -->
+                {% if has_customers %}
+                    <a class="nav-link {% if active_menu == 'customers' %}active{% endif %}"
+                       href="{% url 'customers:customer_list' %}">
+                        <i class="fas fa-handshake me-2"></i> Контрагенты
+                    </a>
+                {% endif %}
+                
+                <!-- ===== БУДУЩИЕ МОДУЛИ (заготовки) ===== -->
+                {% if has_warehouse %}
+                    <a class="nav-link {% if active_menu == 'warehouse' %}active{% endif %}"
+                       href="#">
+                        <i class="fas fa-warehouse me-2"></i> Склад
+                    </a>
+                {% endif %}
+                
+                {% if has_logistics %}
+                    <a class="nav-link {% if active_menu == 'logistics' %}active{% endif %}"
+                       href="#">
+                        <i class="fas fa-truck me-2"></i> Логистика
+                    </a>
+                {% endif %}
             </div>
             {% endif %}
 
@@ -172,7 +189,7 @@
         {% block breadcrumbs %}
         <nav aria-label="breadcrumb">
             <ol class="breadcrumb">
-                <li class="breadcrumb-item"><a href="{% url 'employees:home' %}">Главная</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'home' %}">Главная</a></li>
                 {% block breadcrumb_items %}{% endblock %}
             </ol>
         </nav>

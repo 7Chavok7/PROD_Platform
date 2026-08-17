@@ -11,9 +11,9 @@ urlpatterns = [
     
     # Сотрудники
     path('', views.employee_list, name='employee_list'),
-    path('<int:pk>/', views.employee_detail, name='employee_detail'),
     path('create/', views.employee_create, name='employee_create'),
     path('<int:pk>/edit/', views.employee_edit, name='employee_edit'),
+    path('<int:pk>/', views.employee_detail, name='employee_detail'),
     path('<int:pk>/delete/', views.employee_delete, name='employee_delete'),
 
     # Участки
@@ -37,6 +37,4 @@ urlpatterns = [
     # Матрица квалификаций
     path('skill-matrix/', views.skill_matrix, name='skill_matrix'),    
     
-    # Главная страница (редирект по ролям)
-    path('', views.home_redirect, name='home'),
 ]

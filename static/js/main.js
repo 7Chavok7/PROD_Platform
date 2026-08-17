@@ -104,8 +104,11 @@ document.addEventListener('DOMContentLoaded', function() {
     const navLinks = document.querySelectorAll('.sidebar .nav-link');
     navLinks.forEach(function(link) {
         const href = link.getAttribute('href');
-        if (href && currentPath.startsWith(href) && href !== '/') {
-            link.classList.add('active');
+        if (href && href !== '/') {
+            // ✅ ТОЧНОЕ СОВПАДЕНИЕ, а не startsWith
+            if (currentPath === href || currentPath.startsWith(href + '/')) {
+                link.classList.add('active');
+            }
         }
         // Для главной страницы
         if (href === '/' && currentPath === '/') {
