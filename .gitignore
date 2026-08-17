@@ -67,4 +67,4 @@ help
 Dockerfile
 docker-compose.yml
 nginx.conf
-certs/
+certs/core/settings.py
