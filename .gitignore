@@ -62,3 +62,9 @@ dump.rdb
 # Вспомогателные файлы
 structur
 help
+
+# Серверные файлы (только для продакшна)
+Dockerfile
+docker-compose.yml
+nginx.conf
+certs/
