@@ -68,3 +68,4 @@ Dockerfile
 docker-compose.yml
 nginx.conf
 certs/core/settings.py
+core/settings.py
