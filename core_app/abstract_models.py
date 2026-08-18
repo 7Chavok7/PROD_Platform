@@ -32,6 +32,21 @@ class BaseWorker(models.Model):
         """
         return 'employee'
     
+    def get_user_role(self):
+        """
+        Возвращает роль пользователя на основе уровня доступа.
+        Должен быть переопределен в конкретной модели.
+        """
+        access_level = self.get_access_level()
+        mapping = {
+            'employee': 'employee',
+            'master': 'master',
+            'manager': 'manager',
+            'director': 'director',
+            'admin': 'admin',
+        }
+        return mapping.get(access_level, 'employee') # По умолчанию - сотрудник        
+    
     
 class BaseCustomer(models.Model):
     """

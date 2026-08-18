@@ -176,7 +176,7 @@ class EmployeeForm(forms.ModelForm):
                 last_name=instance.last_name,
                 email=instance.email or ''
             )
-            user.role = 'employee'
+            user.role = instance.get_user_role()
             user.save()
             instance.user = user
         

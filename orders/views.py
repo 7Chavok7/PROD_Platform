@@ -1,9 +1,11 @@
+# orders/views.py | A.Grachev
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib import messages
 from django.db.models import Q, Count
 from django.db import transaction
 from django.utils import timezone
+from datetime import timedelta
 from django.apps import apps
 from .models import (
     Order, 
@@ -16,14 +18,50 @@ from .forms import (
     DrawingForm, 
     OrderFileForm)
 from .services import OrderProgressService
-from employees.models import Employee
 
 
 def is_manager(user):
     if user.is_superuser:
         return True
-    return user.is_authenticated and user.role in ['admin', 'director', 'manager']
+    return user.is_authenticated and user.role in ['admin', 'director', 'manager', 'employee']
 
+
+@login_required
+def home_redirect(request):
+    """
+    Перенаправляет пользователя на его рабочую страницу в зависимости от роли.
+    Это точка входа после логина.
+    """
+    user = request.user
+    
+    # Суперпользователь ► Дашборд менеджера (в перспективе свой дашборд)
+    if user.is_superuser:
+        return redirect('orders:manager_dashboard')
+    
+    # Проверяем активность модуля "employees"
+    if apps.is_installed('employees'):
+        from employees.models import Employee
+        
+        try:
+            employee = user.employee
+        except Employee.DoesNotExist:
+            messages.error(
+                request,
+                'Ваша учетная запись не привязана к сотруднику. Обратитесь к Администратору.'
+            )
+            return redirect('logout')
+        
+        # Определяем уровень доступа из должности
+        access_level = employee.get_access_level()
+        
+        if access_level in ['manager', 'director', 'admin']:
+            return redirect('orders:manager_dashboard')
+        if access_level in ['employee', 'master']:
+            return redirect('orders:employee_tasks')
+    
+    # Если модуль "employees" не активен ► просто список заказов
+    return redirect('orders:order_list')
+    
 
 # =========================================================
 # =   ЗАКАЗЫ (CRUD)                                       =
@@ -33,7 +71,10 @@ def is_manager(user):
 @user_passes_test(is_manager)
 def order_list(request):
     """Список заказов с фильтрацией"""
-    orders = Order.objects.select_related('customer', 'responsible_manager').prefetch_related('stages').all()
+    
+    # Используем select_related только для полей, которые точно есть
+    # responsible_manager всегда есть, customer — условно
+    orders = Order.objects.select_related('responsible_manager').prefetch_related('stages').all()
     
     # Фильтр по статусу
     status = request.GET.get('status')
@@ -45,14 +86,20 @@ def order_list(request):
     if priority:
         orders = orders.filter(priority=priority)
     
-    # Поиск
+    # Поиск — адаптивный, с проверкой наличия поля
     search = request.GET.get('search')
     if search:
-        orders = orders.filter(
-            Q(number__icontains=search) |
-            Q(name__icontains=search) |
-            Q(customer__name__icontains=search)
-        )
+        # Базовый поиск по номеру и названию
+        search_filter = Q(number__icontains=search) | Q(name__icontains=search)
+        
+        # Если модуль customers активен — добавляем поиск по имени заказчика
+        if apps.is_installed('customers'):
+            search_filter |= Q(customer__name__icontains=search)
+        
+        # Всегда ищем по текстовому полю customer_name
+        search_filter |= Q(customer_name__icontains=search)
+        
+        orders = orders.filter(search_filter)
     
     # Добавляем прогресс через сервис
     orders = OrderProgressService.get_orders_with_progress(orders)
@@ -70,7 +117,11 @@ def order_list(request):
 @user_passes_test(is_manager)
 def order_detail(request, pk):
     """Детальная страница заказа"""
-    order = get_object_or_404(Order.objects.prefetch_related('stages', 'files'), pk=pk)
+    # Используем select_related только для полей, которые точно есть
+    order = get_object_or_404(
+        Order.objects.select_related('responsible_manager').prefetch_related('stages', 'files'),
+        pk=pk
+    )
     
     # Используем сервис для расчёта
     progress = OrderProgressService.get_progress_percent(order)
@@ -92,7 +143,7 @@ def order_create(request):
     if request.method == 'POST':
         form = OrderForm(request.POST, request.FILES)
         
-        # ✅ ОТЛАДКА: выводим ошибки формы
+        # ОТЛАДКА: выводим ошибки формы
         if not form.is_valid():
             print("❌ ФОРМА НЕ ВАЛИДНА!")
             print(form.errors)
@@ -301,24 +352,33 @@ def drawing_delete(request, order_pk, stage_pk, pk):
 
 @login_required
 def employee_tasks(request):
-    """Личный кабинет сотруднкиа: список его задач"""
+    """Личный кабинет сотрудника: список его задач"""
+    
+    # Проверяем активность модуля employees
+    if not apps.is_installed('employees'):
+        return render(request, 'orders/employee_tasks.html', {
+            'error': 'Модуль "Сотрудники" не активен. Обратитесь к администратору.'
+        })
+    
+    from employees.models import Employee
+    
     # Проверяем, есть ли у пользователя анкета сотрудника
     try:
         employee = request.user.employee
     except Employee.DoesNotExist:
         return render(request, 'orders/employee_tasks.html', {
-            'error': 'Анкета сотрудника не заполнена. Обратитесь к администратору'
+            'error': 'Анкета сотрудника не заполнена. Обратитесь к администратору.'
         })
         
-    # Получаем уровень доступа из должности (через абстракцию).
+    # Получаем уровень доступа из должности (через абстракцию)
     access_level = employee.get_access_level()
     
-    # Если у сотрудника уровень доступа 'employee' или 'master' - показываем задачи.
+    # Если у сотрудника уровень доступа 'employee' или 'master' - показываем задачи
     if access_level in ['employee', 'master']:
         # Базовый запрос: задачи, назначенные на этого сотрудника
         stages = Stage.objects.filter(
             assigned_employee=employee
-        ).select_related('order', 'department', 'required_skill').order_by('planned_start_date')
+        ).select_related('order').order_by('planned_start_date')
         
         # Если мастер - показываем задачи всего участка
         if access_level == 'master' and employee.department:
@@ -326,9 +386,9 @@ def employee_tasks(request):
                 department=employee.department
             ).exclude(
                 assigned_employee=employee
-            ).select_related('order', 'department', 'required_skill').order_by('planned_start_date')
+            ).select_related('order').order_by('planned_start_date')
             
-    # Если у сотруднкка другой уровень доступа - редирект (или ошибка)
+    # Если у сотрудника другой уровень доступа - редирект
     else:
         return redirect('orders:order_list')
     
@@ -342,9 +402,9 @@ def employee_tasks(request):
     return render(request, 'orders/employee_tasks.html', context)
 
 
-# ==========================================================
+# =========================================================
 # = ДЕЙСТВИЯ СОТРУДНИКА (START, COMPLETE, DEFECT, PROBLEM) =
-# ==========================================================
+# =========================================================
 
 @login_required
 def stage_start(request, pk):
@@ -420,3 +480,123 @@ def stage_problem(request, pk):
         messages.warning(request, f'Проблема зафиксирована на этапе "{stage.name}"')
 
     return redirect('orders:employee_tasks')
+
+
+# =========================================================
+# =   ДАШБОРД МЕНЕДЖЕРА                                   =
+# =========================================================
+
+@login_required
+@user_passes_test(is_manager)
+def manager_dashboard(request):
+    """Дашборд менеджера с переключателем режимов"""
+    
+    # Если пользователь — сотрудник, перенаправляем его на его задачи
+    if apps.is_installed('employees'):
+        from employees.models import Employee
+        try:
+            employee = request.user.employee
+            access_level = employee.get_access_level()
+            if access_level == 'employee':
+                return redirect('orders:employee_tasks')
+        except Employee.DoesNotExist:
+            pass
+    
+    # Получаем параметр режима из GET-запроса
+    mode = request.GET.get('mode', 'minimal')
+    
+    # === БАЗОВАЯ СТАТИСТИКА ===
+    if request.user.role in ['director', 'admin']:
+        orders = Order.objects.all()
+    else:
+        orders = Order.objects.filter(responsible_manager=request.user)
+        
+    total_orders = orders.count()
+    in_progress = orders.filter(status=Order.Status.IN_PROGRESS).count()
+    completed = orders.filter(status=Order.Status.COMPLETED).count()
+    overdue = orders.filter(
+        status=Order.Status.IN_PROGRESS,
+        planned_completion_date__lt=timezone.now().date()
+    ).count()
+    cancelled = orders.filter(status=Order.Status.CANCELLED).count()
+    
+    # === АКТИВНЫЕ ЗАКАЗЫ ===
+    active_orders = orders.filter(
+        status__in=[Order.Status.IN_PROGRESS, Order.Status.DRAFT]
+    ).select_related('responsible_manager').prefetch_related('stages')[:20]
+    
+    for order in active_orders:
+        total_stages = order.stages.count()
+        completed_stages = order.stages.filter(status=Stage.Status.COMPLETED).count()
+        order.progress = int((completed_stages / total_stages * 100)) if total_stages > 0 else 0
+        order.completed_count = completed_stages
+        
+    # === ДАННЫЕ ДЛЯ ГРАФИКОВ ===
+    status_stage = orders.values('status').annotate(count=Count('status'))
+    status_labels = {
+        'draft': 'Черновик',
+        'in_progress': 'В работе',
+        'completed': 'Выполнен',
+        'cancelled': 'Отменен'
+    }
+    status_data = []
+    for item in status_stage:
+        status_data.append({
+            'label': status_labels.get(item['status'], item['status']),
+            'value': item['count']
+        })
+        
+    # Динамика заказов по дням
+    today = timezone.now().date()
+    week_ago = today - timedelta(days=7)
+    
+    daily_stats = orders.filter(
+        created_at__date__gte=week_ago
+    ).extra(
+        {'day': 'date(created_at)'}
+    ).values('day').annotate(count=Count('id')).order_by('day')
+    
+    daily_labels = []
+    daily_values = []
+    for i in range(7):
+        day = week_ago + timedelta(days=i+1)
+        daily_labels.append(day.strftime('%d.%m'))
+        daily_values.append(0)
+    
+    for stat in daily_stats:
+        day_str = stat['day'].strftime('%d.%m')
+        if day_str in daily_labels:
+            idx = daily_labels.index(day_str)
+            daily_values[idx] = stat['count']
+            
+    # === ЗАГРУЗКА СОТРУДНИКОВ ===
+    employee_load = []
+    if apps.is_installed('employees'):
+        from employees.models import Employee
+        employees = Employee.objects.filter(status='active').select_related('user')[:10]
+        for emp in employees:
+            load = Stage.objects.filter(
+                assigned_employee=emp,
+                status=Stage.Status.IN_PROGRESS
+            ).count()
+            employee_load.append({
+                'name': emp.full_name,
+                'load': load
+            })
+            
+    context = {
+        'mode': mode,
+        'total_orders': total_orders,
+        'in_progress': in_progress,
+        'completed': completed,
+        'overdue': overdue,
+        'cancelled': cancelled,
+        'active_orders': active_orders,
+        'daily_labels': daily_labels,
+        'daily_values': daily_values,
+        'employee_load': employee_load,
+        'active_menu': 'dashboard',
+        'title': 'Дашборд',
+    }
+    
+    return render(request, 'orders/manager_dashboard.html', context)

@@ -30,4 +30,7 @@ urlpatterns = [
     path('stage/<int:pk>/complete/', views.stage_complete, name='stage_complete'),
     path('stage/<int:pk>/defect/', views.stage_defect, name='stage_defect'),
     path('stage/<int:pk>/problem/', views.stage_problem, name='stage_problem'),
+    
+    # Dashboard
+    path('dashboard/', views.manager_dashboard, name='manager_dashboard'),
 ]

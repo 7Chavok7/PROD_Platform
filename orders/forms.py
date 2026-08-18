@@ -1,8 +1,8 @@
+# orders/forms.py | A.Grachev
 from django import forms
 from django.apps import apps
 from django.contrib.auth import get_user_model
 from .models import Order, Stage, Drawing, OrderFile
-from customers.models import Customer
 
 User = get_user_model()
 
@@ -19,32 +19,23 @@ class OrderForm(forms.ModelForm):
         label='Файлы заказа'
     )
     
-    # ✅ Динамическое поле "Ответственный менеджер" — используем User
-    if apps.is_installed('employees'):
-        responsible_manager = forms.ModelChoiceField(
-            queryset=User.objects.filter(employee__status='active').exclude(is_superuser=True),
-            required=True,
-            label='Ответственный менеджер',
-            widget=forms.Select(attrs={'class': 'form-select'})
-        )
-    else:
-        responsible_manager = forms.CharField(
-            max_length=255,
-            required=True,
-            label='Ответственный менеджер (ФИО)',
-            widget=forms.TextInput(attrs={'class': 'form-control'})
-        )
+    # Динамическое поле "Ответственный менеджер" — используем User
+    responsible_manager = forms.ModelChoiceField(
+        queryset=User.objects.filter(is_active=True).exclude(is_superuser=True),
+        required=True,
+        label='Ответственный менеджер',
+        widget=forms.Select(attrs={'class': 'form-select'})
+    )
     
     class Meta:
         model = Order
         fields = [
-            'name', 'customer', 'responsible_manager',
+            'name', 'responsible_manager',
             'status', 'priority',
             'planned_completion_date', 'description'
         ]
         widgets = {
             'name': forms.TextInput(attrs={'class': 'form-control'}),
-            'customer': forms.Select(attrs={'class': 'form-select'}),
             'status': forms.Select(attrs={'class': 'form-select'}),
             'priority': forms.Select(attrs={'class': 'form-select'}),
             'planned_completion_date': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
@@ -54,20 +45,36 @@ class OrderForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['status'].required = False
+        
+        # Условно добавляем поле customer
+        if apps.is_installed('customers'):
+            from customers.models import Customer
+            self.fields['customer'] = forms.ModelChoiceField(
+                queryset=Customer.objects.filter(is_active=True),
+                required=False,
+                label='Заказчик',
+                widget=forms.Select(attrs={'class': 'form-select'})
+            )
+        else:
+            # Если customers не активен — делаем текстовое поле
+            self.fields['customer'] = forms.CharField(
+                required=False,
+                label='Заказчик (название)',
+                widget=forms.TextInput(attrs={'class': 'form-control'})
+            )
     
     def save(self, commit=True):
         order = super().save(commit=False)
         
-        # ✅ Если модуль employees активен — берём выбранного пользователя
-        if apps.is_installed('employees'):
-            responsible_manager = self.cleaned_data.get('responsible_manager')
-            if responsible_manager:
-                order.responsible_manager = responsible_manager
-        else:
-            # ✅ Если модуль employees не активен — сохраняем текст в description
-            responsible_manager_text = self.cleaned_data.get('responsible_manager')
-            if responsible_manager_text:
-                order.description = f"Менеджер: {responsible_manager_text}\n\n{order.description or ''}"
+        # Обработка customer в зависимости от типа
+        customer_data = self.cleaned_data.get('customer')
+        if customer_data:
+            if isinstance(customer_data, str):
+                # Если это текст — сохраняем в description
+                order.description = f"Заказчик: {customer_data}\n\n{order.description or ''}"
+            else:
+                # Если это объект Customer
+                order.customer = customer_data
         
         if commit:
             order.save()
@@ -94,7 +101,7 @@ class OrderForm(forms.ModelForm):
                         order=order
                     )
         return order
-
+    
 
 # =========================================================
 # =   ФОРМА ДЛЯ ЭТАПА (АДАПТИВНАЯ)                        =
@@ -102,37 +109,14 @@ class OrderForm(forms.ModelForm):
 class StageForm(forms.ModelForm):
     """Форма для создания/редактирования этапа"""
     
-    # Динамическое поле "Назначенный сотрудник"
-    if apps.is_installed('employees'):
-        from employees.models import Employee
-        
-        assigned_employee = forms.ModelChoiceField(
-            queryset=Employee.objects.filter(
-                status=Employee.Status.ACTIVE
-            ).exclude(user__is_superuser=True),
-            required=False,
-            label='Назначенный сотрудник',
-            widget=forms.Select(attrs={'class': 'form-select'})
-        )
-    else:
-        assigned_employee = forms.CharField(
-            max_length=255,
-            required=False,
-            label='Назначенный сотрудник (ФИО)',
-            widget=forms.TextInput(attrs={'class': 'form-control'})
-        )
-    
     class Meta:
         model = Stage
         fields = [
-            'name', 'department', 'required_skill', 'assigned_employee',
-            'planned_hours', 'planned_start_date', 'planned_finish_date',
+            'name', 'planned_hours', 'planned_start_date', 'planned_finish_date',
             'status', 'comment', 'files'
         ]
         widgets = {
             'name': forms.TextInput(attrs={'class': 'form-control'}),
-            'department': forms.Select(attrs={'class': 'form-select'}),
-            'required_skill': forms.Select(attrs={'class': 'form-select'}),
             'planned_hours': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.5'}),
             'planned_start_date': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
             'planned_finish_date': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
@@ -143,29 +127,67 @@ class StageForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # Если модуль employees активен и выбран навык — фильтруем сотрудников
+        
+        # Условно добавляем поля из employees
         if apps.is_installed('employees'):
-            from employees.models import Employee
-            if self.instance and self.instance.required_skill_id:
+            from employees.models import Department, Skill, Employee
+            
+            self.fields['department'] = forms.ModelChoiceField(
+                queryset=Department.objects.all(),
+                required=False,
+                label='Участок',
+                widget=forms.Select(attrs={'class': 'form-select'})
+            )
+            self.fields['required_skill'] = forms.ModelChoiceField(
+                queryset=Skill.objects.all(),
+                required=False,
+                label='Требуемый навык',
+                widget=forms.Select(attrs={'class': 'form-select'})
+            )
+            self.fields['assigned_employee'] = forms.ModelChoiceField(
+                queryset=Employee.objects.filter(status=Employee.Status.ACTIVE).exclude(user__is_superuser=True),
+                required=False,
+                label='Назначенный сотрудник',
+                widget=forms.Select(attrs={'class': 'form-select'})
+            )
+            
+            # Если выбран навык — фильтруем сотрудников
+            if self.instance and self.instance.pk and self.instance.required_skill_id:
                 self.fields['assigned_employee'].queryset = Employee.objects.filter(
                     status=Employee.Status.ACTIVE,
                     skills__id=self.instance.required_skill_id
                 ).exclude(user__is_superuser=True).distinct()
-    
+        else:
+            # Если employees не активен — делаем текстовые поля
+            self.fields['department'] = forms.CharField(
+                required=False,
+                label='Участок (название)',
+                widget=forms.TextInput(attrs={'class': 'form-control'})
+            )
+            self.fields['required_skill'] = forms.CharField(
+                required=False,
+                label='Требуемый навык (название)',
+                widget=forms.TextInput(attrs={'class': 'form-control'})
+            )
+            self.fields['assigned_employee'] = forms.CharField(
+                required=False,
+                label='Назначенный сотрудник (ФИО)',
+                widget=forms.TextInput(attrs={'class': 'form-control'})
+            )
+
     def save(self, commit=True):
         stage = super().save(commit=False)
         
-        # Если модуль employees активен — берём выбранного сотрудника
-        if apps.is_installed('employees'):
-            assigned_employee = self.cleaned_data.get('assigned_employee')
-            if assigned_employee:
-                stage.assigned_employee = assigned_employee
-        else:
-            # Если модуль employees не активен — сохраняем текст в comment
-            assigned_employee_text = self.cleaned_data.get('assigned_employee')
-            if assigned_employee_text:
-                stage.comment = f"Назначенный сотрудник: {assigned_employee_text}\n\n{stage.comment or ''}"
-        
+        # Обработка полей в зависимости от типа
+        for field in ['department', 'required_skill', 'assigned_employee']:
+            value = self.cleaned_data.get(field)
+            if value and isinstance(value, str):
+                # Если это текст — сохраняем в comment
+                stage.comment = f"{field}: {value}\n\n{stage.comment or ''}"
+            elif value and not isinstance(value, str):
+                # Если это объект — присваиваем
+                setattr(stage, field, value)
+
         if commit:
             stage.save()
             self.save_m2m()

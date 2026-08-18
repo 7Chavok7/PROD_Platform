@@ -231,7 +231,44 @@ class Employee(BaseWorker):
         if self.patronymic:
             return f'{self.last_name} {self.first_name} {self.patronymic}'
         return f'{self.last_name} {self.first_name}'
+        
+    def get_access_level(self):
+        """Возвращает уровень доступа из должности"""
+        if self.position and self.position.access_level:
+            return self.position.access_level
+        return 'employee'
     
+    def get_user_role(self):
+        """
+        Возвращает роль пользователя на основе должности.
+        Использует маппинг из core_app.
+        """
+        access_level = self.get_access_level()
+        mapping = {
+            'employee': 'employee',
+            'master': 'employee',
+            'manager': 'manager',
+            'director': 'director',
+            'admin': 'admin',
+        }
+        return mapping.get(access_level, 'employee')
+        
+    def sync_user_role(self):
+        """Синхронизирует роль пользователя с должностью."""
+        
+        if not self.user:
+            return
+        
+        new_role = self.get_user_role()
+        
+        if not new_role:
+            new_role = 'employee'
+        
+        if self.user.role != new_role:
+            self.user.role = new_role
+            self.user.save()
+            print(f'[Синхронизация] Роль обновлена: {self.user.username} → {new_role}')
+            
     def save(self, *args, **kwargs):
         if self.last_name and self.first_name:
             if self.patronymic:
@@ -242,12 +279,7 @@ class Employee(BaseWorker):
                 self.short_name = f'{self.last_name} {self.first_name[:1]}.'
         
         super().save(*args, **kwargs)
-        
-    def get_access_level(self):
-        """Возвращает уровень доступа из должности"""
-        if self.position and self.position.access_level:
-            return self.position.access_level
-        return 'employee'
+        self.sync_user_role()
         
         
 class EmployeeSkill(models.Model):
