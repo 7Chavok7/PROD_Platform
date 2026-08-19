@@ -1,4 +1,4 @@
-/* static/skill_matrix.js | A.Grachev */
+/* static/js/skill_matrix.js | A.Grachev */
 // Матрица квалификаций — фильтрация и интерактивность
 document.addEventListener('DOMContentLoaded', function() {
     'use strict';

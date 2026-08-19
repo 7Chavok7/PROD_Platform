@@ -134,7 +134,7 @@
             </div>
             <div class="card-body">
                 {% if employee.history.all %}
-                    {% for record in employee.history.all|dictsortreversed:"history_date"|slice:":20" %}
+                    {% for record in employee.history.all|dictsortreversed:"history_date"|slice:":5" %}
                     <div class="history-item history-action-{{ record.history_type }}">
                         <div class="d-flex justify-content-between">
                             <span class="history-user">

@@ -384,7 +384,11 @@ def position_delete(request, pk):
 @user_passes_test(is_manager)
 def skill_matrix(request):
     """Матрица квалификаций: сотрудник х навыки"""
-    employees = Employee.objects.select_related('department').all()
+    # ✅ ИСПРАВЛЕНО: исключаем суперпользователей
+    employees = Employee.objects.select_related('department').exclude(
+        user__is_superuser=True
+    ).all()
+    
     skills = Skill.objects.all().order_by('name')
     departments = Department.objects.all()
     
