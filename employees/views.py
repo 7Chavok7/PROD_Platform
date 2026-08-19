@@ -81,13 +81,32 @@ def employee_detail(request, pk):
     employee = get_object_or_404(Employee, pk=pk)
     skills = Skill.objects.all().order_by('name')
     
-    history = employee.history.all().order_by('-history_date')[:5]
+    # Получаем историю в хронологическом порядке (старые → новые)
+    history_all = list(employee.history.all().order_by('history_date'))
+    
+    # Добавляем атрибут history_delta_changes к каждой записи (как в админке)
+    for i, current in enumerate(history_all):
+        if i == 0:
+            # Первая запись - нет предыдущей
+            current.history_delta_changes = None
+        else:
+            # Получаем предыдущую запись
+            previous = history_all[i - 1]
+            # Получаем изменения между текущей и предыдущей записью
+            delta = current.diff_against(previous, foreign_keys_are_objs=True)
+            # Используем helper как в админке
+            from simple_history.template_utils import HistoricalRecordContextHelper
+            helper = HistoricalRecordContextHelper(Employee, current)
+            current.history_delta_changes = helper.context_for_delta_changes(delta)
+    
+    # Берем только последние 5 записей (переворачиваем, чтобы новые были сверху)
+    history_last_5 = list(reversed(history_all))[:5]
     
     context = {
         'employee': employee,
         'skills': skills,
-        'history': history,
-        'history_count': employee.history.count(),
+        'history': history_last_5,
+        'history_count': len(history_all),
         'active_menu': 'employees',
         'title': str(employee),
     }
@@ -100,18 +119,36 @@ def employee_history(request, pk):
     """Полная история изменений сотрудника с пагинацией"""
     employee = get_object_or_404(Employee, pk=pk)
     
-    # Получаем всю историю
-    history_all = employee.history.all().order_by('-history_date')
+    # Получаем историю в хронологическом порядке (старые → новые)
+    history_all = list(employee.history.all().order_by('history_date'))
     
-    # Пагинация (по 20 записей на страницу)
-    paginator = Paginator(history_all, 20)
+    # Добавляем атрибут history_delta_changes к каждой записи (как в админке)
+    for i, current in enumerate(history_all):
+        if i == 0:
+            # Первая запись - нет предыдущей
+            current.history_delta_changes = None
+        else:
+            # Получаем предыдущую запись
+            previous = history_all[i - 1]
+            # Получаем изменения между текущей и предыдущей записью
+            delta = current.diff_against(previous, foreign_keys_are_objs=True)
+            # Используем helper как в админке
+            from simple_history.template_utils import HistoricalRecordContextHelper
+            helper = HistoricalRecordContextHelper(Employee, current)
+            current.history_delta_changes = helper.context_for_delta_changes(delta)
+    
+    # Переворачиваем для отображения (сначала новые)
+    history_with_changes = list(reversed(history_all))
+    
+    # Пагинация
+    paginator = Paginator(history_with_changes, 20)
     page_number = request.GET.get('page')
     history_page = paginator.get_page(page_number)
     
     context = {
         'employee': employee,
         'history_page': history_page,
-        'history_count': history_all.count(),
+        'history_count': len(history_with_changes),
         'active_menu': 'employees',
         'title': f'История изменений: {employee}',
     }

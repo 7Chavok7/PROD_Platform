@@ -45,63 +45,47 @@
     <div class="card-body">
         {% if history_page %}
             {% for record in history_page %}
-            <div class="history-item history-action-{{ record.history_type }} mb-3">
-                <div class="d-flex justify-content-between align-items-start">
-                    <div>
-                        <span class="history-user fw-bold">
-                            {% if record.history_user %}
-                                {{ record.history_user.get_full_name|default:record.history_user.username }}
+            <div class="history-full-item">
+                <!-- ОДНА СТРОКА: Кто | Что | Когда -->
+                <div class="history-row">
+                    <!-- Кто изменил -->
+                    <span class="history-user">
+                        <i class="fas fa-user-circle me-1"></i>
+                        {% if record.history_user %}
+                            {{ record.history_user.get_full_name|default:record.history_user.username }}
+                        {% else %}
+                            <span class="text-muted">Система</span>
+                        {% endif %}
+                    </span>
+                    
+                    <!-- Что изменилось -->
+                    <span class="history-changes-inline">
+                        {% if record.history_type == '~' %}
+                            {% if record.history_delta_changes %}
+                                {% for change in record.history_delta_changes %}
+                                    <span class="change-field">{{ change.field }}</span>
+                                    <span class="change-old">{{ change.old|default:'(пусто)' }}</span>
+                                    <span class="change-arrow"><i class="fas fa-arrow-right"></i></span>
+                                    <span class="change-new">{{ change.new|default:'(пусто)' }}</span>
+                                    {% if not forloop.last %}<span class="change-separator">;</span>{% endif %}
+                                {% endfor %}
                             {% else %}
-                                <span class="text-muted">Система</span>
+                                <span class="text-muted">Изменений нет</span>
                             {% endif %}
-                        </span>
-                        <span class="badge {% if record.history_type == '+' %}bg-success{% elif record.history_type == '~' %}bg-warning text-dark{% else %}bg-danger{% endif %} ms-2">
-                            {% if record.history_type == '+' %}
-                                <i class="fas fa-plus me-1"></i>Создание
-                            {% elif record.history_type == '~' %}
-                                <i class="fas fa-edit me-1"></i>Изменение
-                            {% elif record.history_type == '-' %}
-                                <i class="fas fa-trash me-1"></i>Удаление
-                            {% endif %}
-                        </span>
-                    </div>
-                    <span class="history-date text-muted small">
+                        {% elif record.history_type == '+' %}
+                            <span class="text-success"><i class="fas fa-plus-circle me-1"></i>Создание</span>
+                        {% elif record.history_type == '-' %}
+                            <span class="text-danger"><i class="fas fa-minus-circle me-1"></i>Удаление</span>
+                        {% else %}
+                            <span class="text-muted">Изменений нет</span>
+                        {% endif %}
+                    </span>
+                    
+                    <!-- Когда изменил -->
+                    <span class="history-date">
                         <i class="fas fa-clock me-1"></i>{{ record.history_date|date:"d.m.Y H:i:s" }}
                     </span>
                 </div>
-                
-                <div class="mt-1">
-                    <span class="text-muted small">Объект:</span>
-                    <code>{{ record }}</code>
-                </div>
-                
-                {% if record.history_type == '~' and record.diff_against %}
-                    <div class="mt-2">
-                        <span class="text-muted small">Изменения:</span>
-                        <div class="ms-3 mt-1">
-                            {% for field, diff in record.diff_against.items %}
-                                <div class="small py-1">
-                                    <strong>{{ field|capfirst }}:</strong>
-                                    <span class="text-danger text-decoration-line-through">{{ diff.old|default:'(пусто)' }}</span>
-                                    <i class="fas fa-arrow-right mx-1 text-muted"></i>
-                                    <span class="text-success">{{ diff.new|default:'(пусто)' }}</span>
-                                </div>
-                            {% endfor %}
-                        </div>
-                    </div>
-                {% endif %}
-                
-                {% if record.history_type == '+' %}
-                    <div class="mt-2 text-muted small">
-                        <i class="fas fa-info-circle me-1"></i>Создана новая запись
-                    </div>
-                {% endif %}
-                
-                {% if record.history_type == '-' %}
-                    <div class="mt-2 text-muted small">
-                        <i class="fas fa-info-circle me-1"></i>Запись была удалена
-                    </div>
-                {% endif %}
             </div>
             {% endfor %}
             
@@ -147,10 +131,10 @@
             {% endif %}
             
         {% else %}
-            <div class="text-center py-5 text-muted">
-                <i class="fas fa-history fa-3x d-block mb-3 opacity-25"></i>
+            <div class="history-empty-state">
+                <i class="fas fa-history"></i>
                 <h5>История изменений пуста</h5>
-                <p class="small">Для этого сотрудника пока нет записей</p>
+                <p class="text-muted small">Для этого сотрудника пока нет записей</p>
             </div>
         {% endif %}
     </div>

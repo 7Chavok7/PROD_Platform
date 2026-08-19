@@ -1,41 +1,145 @@
+/* static/css/employee_detail.css | A.Grachev */
 /* =========================================================
-   СТИЛИ ДЛЯ КАРТОЧКИ СОТРУДНИКА
+   СТИЛИ ДЛЯ КАРТОЧКИ СОТРУДНИКА И ИСТОРИИ
    ========================================================= */
 
-/* --- История изменений --- */
+/* =========================================================
+   ИСТОРИЯ ИЗМЕНЕНИЙ - ОДНА СТРОКА
+   ========================================================= */
 .history-item {
-    border-left: 3px solid #0d6efd;
-    padding-left: 12px;
-    margin-bottom: 8px;
+    padding: 8px 0;
+    border-bottom: 1px solid #f1f3f5;
+    transition: background-color 0.2s ease;
 }
 
-.history-item .history-date {
-    font-size: 0.75rem;
-    color: #6c757d;
+.history-item:last-child {
+    border-bottom: none;
 }
 
-.history-item .history-user {
-    font-weight: 500;
+.history-item:hover {
+    background-color: #f8f9fa;
 }
 
-.history-item .history-changes {
-    font-size: 0.85rem;
+.history-row {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px 20px;
+    padding: 4px 8px;
+}
+
+.history-row .history-user {
+    font-weight: 600;
+    color: #2d3436;
+    min-width: 120px;
+    font-size: 0.9rem;
+    white-space: nowrap;
+}
+
+.history-row .history-user i {
+    color: #0d6efd;
+}
+
+.history-row .history-changes-inline {
+    flex: 1;
+    min-width: 200px;
+    font-size: 0.9rem;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px 8px;
+}
+
+.history-row .history-changes-inline .change-field {
+    font-weight: 600;
     color: #495057;
 }
 
-.history-item .history-action-create {
-    border-left-color: #198754;
+.history-row .history-changes-inline .change-old {
+    color: #dc3545;
+    text-decoration: line-through;
+    background: #f8d7da;
+    padding: 0 6px;
+    border-radius: 3px;
+    font-size: 0.85rem;
 }
 
-.history-item .history-action-update {
-    border-left-color: #ffc107;
+.history-row .history-changes-inline .change-new {
+    color: #198754;
+    background: #d1e7dd;
+    padding: 0 6px;
+    border-radius: 3px;
+    font-size: 0.85rem;
 }
 
-.history-item .history-action-delete {
-    border-left-color: #dc3545;
+.history-row .history-changes-inline .change-arrow {
+    color: #adb5bd;
+    font-size: 0.8rem;
+    margin: 0 2px;
 }
 
-/* --- Навыки (теги) --- */
+.history-row .history-changes-inline .change-separator {
+    color: #adb5bd;
+    margin: 0 4px;
+}
+
+.history-row .history-date {
+    color: #6c757d;
+    font-size: 0.8rem;
+    white-space: nowrap;
+    margin-left: auto;
+}
+
+.history-row .history-date i {
+    margin-right: 4px;
+}
+
+/* =========================================================
+   ПОЛНАЯ ИСТОРИЯ
+   ========================================================= */
+.history-full-item {
+    background: #fff;
+    border-radius: 6px;
+    margin-bottom: 4px;
+    border-bottom: 1px solid #f1f3f5;
+    transition: background-color 0.2s ease;
+}
+
+.history-full-item:hover {
+    background-color: #f8f9fa;
+}
+
+.history-full-item .history-row {
+    padding: 10px 16px;
+}
+
+/* =========================================================
+   ПУСТОЕ СОСТОЯНИЕ
+   ========================================================= */
+.history-empty-state {
+    text-align: center;
+    padding: 40px 20px;
+}
+
+.history-empty-state i {
+    font-size: 3rem;
+    color: #dee2e6;
+    margin-bottom: 12px;
+}
+
+.history-empty-state h5 {
+    color: #495057;
+    margin-bottom: 8px;
+}
+
+.history-empty-state p {
+    color: #6c757d;
+    font-size: 0.9rem;
+}
+
+/* =========================================================
+   НАВЫКИ (ТЕГИ)
+   ========================================================= */
 .skill-tag {
     display: inline-flex;
     align-items: center;
@@ -52,4 +156,32 @@
 .skill-tag .remove-skill:hover {
     opacity: 1;
     color: #dc3545;
+}
+
+/* =========================================================
+   АДАПТИВНОСТЬ
+   ========================================================= */
+@media (max-width: 768px) {
+    .history-row {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 4px;
+        padding: 8px 12px;
+    }
+
+    .history-row .history-user {
+        min-width: unset;
+        font-size: 0.85rem;
+    }
+
+    .history-row .history-changes-inline {
+        min-width: unset;
+        font-size: 0.85rem;
+        width: 100%;
+    }
+
+    .history-row .history-date {
+        margin-left: 0;
+        font-size: 0.75rem;
+    }
 }

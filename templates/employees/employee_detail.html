@@ -103,7 +103,7 @@
         </div>
     </div>
 
-    <!-- НАВЫКИ (С ВОЗМОЖНОСТЬЮ ДОБАВЛЕНИЯ) -->
+    <!-- НАВЫКИ -->
     <div class="col-12">
         <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center">
@@ -143,41 +143,46 @@
             <div class="card-body">
                 {% if history %}
                     {% for record in history %}
-                    <div class="history-item history-action-{{ record.history_type }}">
-                        <div class="d-flex justify-content-between">
+                    <div class="history-item">
+                        <div class="history-row">
+                            <!-- Кто изменил -->
                             <span class="history-user">
+                                <i class="fas fa-user-circle me-1"></i>
                                 {% if record.history_user %}
                                     {{ record.history_user.get_full_name|default:record.history_user.username }}
                                 {% else %}
                                     <span class="text-muted">Система</span>
                                 {% endif %}
                             </span>
-                            <span class="history-date">{{ record.history_date|date:"d.m.Y H:i" }}</span>
-                        </div>
-                        <div class="history-changes">
-                            {% if record.history_type == '+' %}
-                                <span class="text-success">Создание записи</span>
-                            {% elif record.history_type == '~' %}
-                                <span class="text-warning">Изменение</span>
-                                {% if record.diff_against %}
-                                    <span class="text-muted">({{ record.diff_against|length }} полей)</span>
+                            
+                            <!-- Что изменилось -->
+                            <span class="history-changes-inline">
+                                {% if record.history_type == '~' %}
+                                    {% if record.history_delta_changes %}
+                                        {% for change in record.history_delta_changes %}
+                                            <span class="change-field">{{ change.field }}</span>
+                                            <span class="change-old">{{ change.old|default:'(пусто)' }}</span>
+                                            <span class="change-arrow"><i class="fas fa-arrow-right"></i></span>
+                                            <span class="change-new">{{ change.new|default:'(пусто)' }}</span>
+                                            {% if not forloop.last %}<span class="change-separator">;</span>{% endif %}
+                                        {% endfor %}
+                                    {% else %}
+                                        <span class="text-muted">Изменений нет</span>
+                                    {% endif %}
+                                {% elif record.history_type == '+' %}
+                                    <span class="text-success"><i class="fas fa-plus-circle me-1"></i>Создание</span>
+                                {% elif record.history_type == '-' %}
+                                    <span class="text-danger"><i class="fas fa-minus-circle me-1"></i>Удаление</span>
+                                {% else %}
+                                    <span class="text-muted">Изменений нет</span>
                                 {% endif %}
-                            {% elif record.history_type == '-' %}
-                                <span class="text-danger">Удаление записи</span>
-                            {% endif %}
+                            </span>
+                            
+                            <!-- Когда изменил -->
+                            <span class="history-date">
+                                <i class="fas fa-clock me-1"></i>{{ record.history_date|date:"d.m.Y H:i:s" }}
+                            </span>
                         </div>
-                        {% if record.history_type == '~' and record.diff_against %}
-                            <div class="history-changes small">
-                                {% for field, diff in record.diff_against.items %}
-                                    <div>
-                                        <strong>{{ field|capfirst }}:</strong>
-                                        <span class="text-danger text-decoration-line-through">{{ diff.old }}</span>
-                                        → 
-                                        <span class="text-success">{{ diff.new }}</span>
-                                    </div>
-                                {% endfor %}
-                            </div>
-                        {% endif %}
                     </div>
                     {% endfor %}
                     
@@ -189,31 +194,15 @@
                         </div>
                     {% endif %}
                 {% else %}
-                    <span class="text-muted">История изменений пуста</span>
+                    <div class="history-empty-state">
+                        <i class="fas fa-history"></i>
+                        <h5>История изменений пуста</h5>
+                        <p class="text-muted small">Для этого сотрудника пока нет записей</p>
+                    </div>
                 {% endif %}
             </div>
         </div>
     </div>
-
-    <!-- МЕТАДАННЫЕ -->
-    <div class="col-12">
-        <div class="card">
-            <div class="card-header">
-                <i class="fas fa-clock me-2"></i>Метаданные
-            </div>
-            <div class="card-body text-muted small">
-                <div class="row">
-                    <div class="col-md-6">
-                        <strong>Создан:</strong> {{ employee.created_at|date:"d.m.Y H:i" }}
-                    </div>
-                    <div class="col-md-6">
-                        <strong>Обновлён:</strong> {{ employee.updated_at|date:"d.m.Y H:i" }}
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
 {% endblock %}
 
 {% block extra_js %}
