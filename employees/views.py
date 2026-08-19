@@ -7,6 +7,7 @@ from django.db import transaction
 from django.contrib import messages
 from django.db.models import Q
 from django.http import JsonResponse
+from django.core.paginator import Paginator
 from .models import (
     Employee, 
     Department, 
@@ -80,13 +81,41 @@ def employee_detail(request, pk):
     employee = get_object_or_404(Employee, pk=pk)
     skills = Skill.objects.all().order_by('name')
     
+    history = employee.history.all().order_by('-history_date')[:5]
+    
     context = {
         'employee': employee,
         'skills': skills,
+        'history': history,
+        'history_count': employee.history.count(),
         'active_menu': 'employees',
         'title': str(employee),
     }
     return render(request, 'employees/employee_detail.html', context)
+
+
+@login_required
+@user_passes_test(is_manager)
+def employee_history(request, pk):
+    """Полная история изменений сотрудника с пагинацией"""
+    employee = get_object_or_404(Employee, pk=pk)
+    
+    # Получаем всю историю
+    history_all = employee.history.all().order_by('-history_date')
+    
+    # Пагинация (по 20 записей на страницу)
+    paginator = Paginator(history_all, 20)
+    page_number = request.GET.get('page')
+    history_page = paginator.get_page(page_number)
+    
+    context = {
+        'employee': employee,
+        'history_page': history_page,
+        'history_count': history_all.count(),
+        'active_menu': 'employees',
+        'title': f'История изменений: {employee}',
+    }
+    return render(request, 'employees/employee_history.html', context)
 
 
 @login_required

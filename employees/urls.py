@@ -15,6 +15,9 @@ urlpatterns = [
     path('<int:pk>/edit/', views.employee_edit, name='employee_edit'),
     path('<int:pk>/', views.employee_detail, name='employee_detail'),
     path('<int:pk>/delete/', views.employee_delete, name='employee_delete'),
+    
+    # История изменений сотрудника
+    path('<int:pk>/history/', views.employee_history, name='employee_history'), 
 
     # Участки
     path('departments/', views.department_list, name='department_list'),

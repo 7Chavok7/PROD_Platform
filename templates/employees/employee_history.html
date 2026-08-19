@@ -1,0 +1,159 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block extra_css %}
+<link href="{% static 'css/employee_detail.css' %}" rel="stylesheet">
+{% endblock %}
+
+{% block breadcrumb_items %}
+<li class="breadcrumb-item"><a href="{% url 'employees:employee_list' %}">Сотрудники</a></li>
+<li class="breadcrumb-item"><a href="{% url 'employees:employee_detail' employee.pk %}">{{ employee }}</a></li>
+<li class="breadcrumb-item active">История изменений</li>
+{% endblock %}
+
+{% block content %}
+
+<!-- ============================================================ -->
+<!-- ЗАГОЛОВОК                                                    -->
+<!-- ============================================================ -->
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1>
+            <i class="fas fa-history text-primary me-2"></i>История изменений
+        </h1>
+        <p class="text-muted small mb-0">
+            Сотрудник: <strong>{{ employee }}</strong> · Всего записей: {{ history_count }}
+        </p>
+    </div>
+    <div>
+        <a href="{% url 'employees:employee_detail' employee.pk %}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left me-2"></i>Назад к карточке
+        </a>
+    </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- СПИСОК ИСТОРИИ                                               -->
+<!-- ============================================================ -->
+<div class="card">
+    <div class="card-header">
+        <i class="fas fa-list me-2"></i>Все изменения
+        <span class="badge bg-primary ms-2">{{ history_count }}</span>
+    </div>
+    <div class="card-body">
+        {% if history_page %}
+            {% for record in history_page %}
+            <div class="history-item history-action-{{ record.history_type }} mb-3">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <span class="history-user fw-bold">
+                            {% if record.history_user %}
+                                {{ record.history_user.get_full_name|default:record.history_user.username }}
+                            {% else %}
+                                <span class="text-muted">Система</span>
+                            {% endif %}
+                        </span>
+                        <span class="badge {% if record.history_type == '+' %}bg-success{% elif record.history_type == '~' %}bg-warning text-dark{% else %}bg-danger{% endif %} ms-2">
+                            {% if record.history_type == '+' %}
+                                <i class="fas fa-plus me-1"></i>Создание
+                            {% elif record.history_type == '~' %}
+                                <i class="fas fa-edit me-1"></i>Изменение
+                            {% elif record.history_type == '-' %}
+                                <i class="fas fa-trash me-1"></i>Удаление
+                            {% endif %}
+                        </span>
+                    </div>
+                    <span class="history-date text-muted small">
+                        <i class="fas fa-clock me-1"></i>{{ record.history_date|date:"d.m.Y H:i:s" }}
+                    </span>
+                </div>
+                
+                <div class="mt-1">
+                    <span class="text-muted small">Объект:</span>
+                    <code>{{ record }}</code>
+                </div>
+                
+                {% if record.history_type == '~' and record.diff_against %}
+                    <div class="mt-2">
+                        <span class="text-muted small">Изменения:</span>
+                        <div class="ms-3 mt-1">
+                            {% for field, diff in record.diff_against.items %}
+                                <div class="small py-1">
+                                    <strong>{{ field|capfirst }}:</strong>
+                                    <span class="text-danger text-decoration-line-through">{{ diff.old|default:'(пусто)' }}</span>
+                                    <i class="fas fa-arrow-right mx-1 text-muted"></i>
+                                    <span class="text-success">{{ diff.new|default:'(пусто)' }}</span>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                {% endif %}
+                
+                {% if record.history_type == '+' %}
+                    <div class="mt-2 text-muted small">
+                        <i class="fas fa-info-circle me-1"></i>Создана новая запись
+                    </div>
+                {% endif %}
+                
+                {% if record.history_type == '-' %}
+                    <div class="mt-2 text-muted small">
+                        <i class="fas fa-info-circle me-1"></i>Запись была удалена
+                    </div>
+                {% endif %}
+            </div>
+            {% endfor %}
+            
+            <!-- ============================================================ -->
+            <!-- ПАГИНАЦИЯ                                                   -->
+            <!-- ============================================================ -->
+            {% if history_page.has_other_pages %}
+            <nav aria-label="История изменений">
+                <ul class="pagination justify-content-center mt-4">
+                    {% if history_page.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page=1">
+                                <i class="fas fa-angle-double-left"></i>
+                            </a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ history_page.previous_page_number }}">
+                                <i class="fas fa-angle-left"></i>
+                            </a>
+                        </li>
+                    {% endif %}
+                    
+                    <li class="page-item active">
+                        <span class="page-link">
+                            {{ history_page.number }} / {{ history_page.paginator.num_pages }}
+                        </span>
+                    </li>
+                    
+                    {% if history_page.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ history_page.next_page_number }}">
+                                <i class="fas fa-angle-right"></i>
+                            </a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ history_page.paginator.num_pages }}">
+                                <i class="fas fa-angle-double-right"></i>
+                            </a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+            
+        {% else %}
+            <div class="text-center py-5 text-muted">
+                <i class="fas fa-history fa-3x d-block mb-3 opacity-25"></i>
+                <h5>История изменений пуста</h5>
+                <p class="small">Для этого сотрудника пока нет записей</p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+{% endblock %}

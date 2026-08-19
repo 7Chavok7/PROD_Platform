@@ -126,15 +126,23 @@
         </div>
     </div>
 
-    <!-- ИСТОРИЯ ИЗМЕНЕНИЙ -->
+    <!-- ИСТОРИЯ ИЗМЕНЕНИЙ (ТОЛЬКО 5 ПОСЛЕДНИХ ЗАПИСЕЙ) -->
     <div class="col-12">
         <div class="card">
-            <div class="card-header">
-                <i class="fas fa-history me-2"></i>История изменений
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span><i class="fas fa-history me-2"></i>История изменений</span>
+                <div>
+                    <span class="badge bg-secondary me-2">{{ history_count }} записей</span>
+                    {% if history_count > 5 %}
+                        <a href="{% url 'employees:employee_history' employee.pk %}" class="btn btn-sm btn-outline-primary">
+                            <i class="fas fa-list me-1"></i>Вся история
+                        </a>
+                    {% endif %}
+                </div>
             </div>
             <div class="card-body">
-                {% if employee.history.all %}
-                    {% for record in employee.history.all|dictsortreversed:"history_date"|slice:":5" %}
+                {% if history %}
+                    {% for record in history %}
                     <div class="history-item history-action-{{ record.history_type }}">
                         <div class="d-flex justify-content-between">
                             <span class="history-user">
@@ -172,9 +180,12 @@
                         {% endif %}
                     </div>
                     {% endfor %}
-                    {% if employee.history.all.count > 20 %}
-                        <div class="text-center text-muted small">
-                            Показано последних 20 записей из {{ employee.history.all.count }}
+                    
+                    {% if history_count > 5 %}
+                        <div class="text-center mt-3">
+                            <a href="{% url 'employees:employee_history' employee.pk %}" class="btn btn-outline-primary btn-sm">
+                                <i class="fas fa-list me-1"></i>Показать все {{ history_count }} записей
+                            </a>
                         </div>
                     {% endif %}
                 {% else %}
