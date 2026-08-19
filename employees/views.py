@@ -81,32 +81,48 @@ def employee_detail(request, pk):
     employee = get_object_or_404(Employee, pk=pk)
     skills = Skill.objects.all().order_by('name')
     
-    # Получаем историю в хронологическом порядке (старые → новые)
+    # Получаем историю сотрудника
     history_all = list(employee.history.all().order_by('history_date'))
     
-    # Добавляем атрибут history_delta_changes к каждой записи (как в админке)
-    for i, current in enumerate(history_all):
+    # Добавляем историю навыков
+    skill_history = EmployeeSkill.history.filter(employee_id=pk).order_by('history_date')
+    
+    # Объединяем историю сотрудника и навыков
+    combined_history = list(history_all) + list(skill_history)
+    combined_history.sort(key=lambda x: x.history_date)
+    
+    # Добавляем атрибут history_delta_changes к каждой записи
+    for i, current in enumerate(combined_history):
         if i == 0:
-            # Первая запись - нет предыдущей
             current.history_delta_changes = None
         else:
-            # Получаем предыдущую запись
-            previous = history_all[i - 1]
-            # Получаем изменения между текущей и предыдущей записью
-            delta = current.diff_against(previous, foreign_keys_are_objs=True)
-            # Используем helper как в админке
-            from simple_history.template_utils import HistoricalRecordContextHelper
-            helper = HistoricalRecordContextHelper(Employee, current)
-            current.history_delta_changes = helper.context_for_delta_changes(delta)
+            previous = combined_history[i - 1]
+            # Проверяем, что это один и тот же тип объекта
+            if type(current) == type(previous):
+                try:
+                    delta = current.diff_against(previous, foreign_keys_are_objs=True)
+                    if delta:
+                        from simple_history.template_utils import HistoricalRecordContextHelper
+                        # Определяем модель для helper
+                        model = Employee if isinstance(current, Employee.history.model) else EmployeeSkill
+                        helper = HistoricalRecordContextHelper(model, current)
+                        current.history_delta_changes = helper.context_for_delta_changes(delta)
+                    else:
+                        current.history_delta_changes = None
+                except:
+                    current.history_delta_changes = None
+            else:
+                # Разные типы записей - показываем как создание/изменение
+                current.history_delta_changes = None
     
-    # Берем только последние 5 записей (переворачиваем, чтобы новые были сверху)
-    history_last_5 = list(reversed(history_all))[:5]
+    # Берем только последние 5 записей
+    history_last_5 = list(reversed(combined_history))[:5]
     
     context = {
         'employee': employee,
         'skills': skills,
         'history': history_last_5,
-        'history_count': len(history_all),
+        'history_count': len(combined_history),
         'active_menu': 'employees',
         'title': str(employee),
     }
@@ -119,26 +135,39 @@ def employee_history(request, pk):
     """Полная история изменений сотрудника с пагинацией"""
     employee = get_object_or_404(Employee, pk=pk)
     
-    # Получаем историю в хронологическом порядке (старые → новые)
+    # Получаем историю сотрудника
     history_all = list(employee.history.all().order_by('history_date'))
     
-    # Добавляем атрибут history_delta_changes к каждой записи (как в админке)
-    for i, current in enumerate(history_all):
+    # Получаем историю навыков
+    skill_history = EmployeeSkill.history.filter(employee_id=pk).order_by('history_date')
+    
+    # Объединяем историю
+    combined_history = list(history_all) + list(skill_history)
+    combined_history.sort(key=lambda x: x.history_date)
+    
+    # Добавляем атрибут history_delta_changes к каждой записи
+    for i, current in enumerate(combined_history):
         if i == 0:
-            # Первая запись - нет предыдущей
             current.history_delta_changes = None
         else:
-            # Получаем предыдущую запись
-            previous = history_all[i - 1]
-            # Получаем изменения между текущей и предыдущей записью
-            delta = current.diff_against(previous, foreign_keys_are_objs=True)
-            # Используем helper как в админке
-            from simple_history.template_utils import HistoricalRecordContextHelper
-            helper = HistoricalRecordContextHelper(Employee, current)
-            current.history_delta_changes = helper.context_for_delta_changes(delta)
+            previous = combined_history[i - 1]
+            if type(current) == type(previous):
+                try:
+                    delta = current.diff_against(previous, foreign_keys_are_objs=True)
+                    if delta:
+                        from simple_history.template_utils import HistoricalRecordContextHelper
+                        model = Employee if isinstance(current, Employee.history.model) else EmployeeSkill
+                        helper = HistoricalRecordContextHelper(model, current)
+                        current.history_delta_changes = helper.context_for_delta_changes(delta)
+                    else:
+                        current.history_delta_changes = None
+                except:
+                    current.history_delta_changes = None
+            else:
+                current.history_delta_changes = None
     
     # Переворачиваем для отображения (сначала новые)
-    history_with_changes = list(reversed(history_all))
+    history_with_changes = list(reversed(combined_history))
     
     # Пагинация
     paginator = Paginator(history_with_changes, 20)

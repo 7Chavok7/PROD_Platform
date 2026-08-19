@@ -266,6 +266,11 @@ class EmployeeSkill(models.Model):
         choices=[(i, str(i)) for i in range(1, 6)],
         verbose_name='Уровень владения'
     )
+    history = HistoricalRecords(
+        inherit=True,
+        verbose_name='История изменений навыков'
+    )
+    
     
     class Meta:
         unique_together = [['employee', 'skill']]

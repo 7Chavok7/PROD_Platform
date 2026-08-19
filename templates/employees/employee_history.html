@@ -62,20 +62,42 @@
                     <span class="history-changes-inline">
                         {% if record.history_type == '~' %}
                             {% if record.history_delta_changes %}
-                                {% for change in record.history_delta_changes %}
-                                    <span class="change-field">{{ change.field }}</span>
-                                    <span class="change-old">{{ change.old|default:'(пусто)' }}</span>
-                                    <span class="change-arrow"><i class="fas fa-arrow-right"></i></span>
-                                    <span class="change-new">{{ change.new|default:'(пусто)' }}</span>
-                                    {% if not forloop.last %}<span class="change-separator">;</span>{% endif %}
-                                {% endfor %}
+                                <div class="history-changes-inline">
+                                    {% for change in record.history_delta_changes %}
+                                        <span class="change-field">{{ change.field }}</span>
+                                        <span class="change-old">{{ change.old|default:'(пусто)' }}</span>
+                                        <span class="change-arrow"><i class="fas fa-arrow-right"></i></span>
+                                        <span class="change-new">{{ change.new|default:'(пусто)' }}</span>
+                                        {% if not forloop.last %}<span class="change-separator">;</span>{% endif %}
+                                    {% endfor %}
+                                </div>
                             {% else %}
-                                <span class="text-muted">Изменений нет</span>
+                                <span class="text-muted">
+                                    {% if record.history_object and record.history_object.skill %}
+                                        Навык изменен
+                                    {% else %}
+                                        Изменений нет
+                                    {% endif %}
+                                </span>
                             {% endif %}
                         {% elif record.history_type == '+' %}
-                            <span class="text-success"><i class="fas fa-plus-circle me-1"></i>Создание</span>
+                            <span class="text-success">
+                                <i class="fas fa-plus-circle me-1"></i>
+                                {% if record.history_object and record.history_object.skill %}
+                                    Добавлен навык: {{ record.history_object.skill.name }} (ур. {{ record.history_object.level }})
+                                {% else %}
+                                    Создание
+                                {% endif %}
+                            </span>
                         {% elif record.history_type == '-' %}
-                            <span class="text-danger"><i class="fas fa-minus-circle me-1"></i>Удаление</span>
+                            <span class="text-danger">
+                                <i class="fas fa-minus-circle me-1"></i>
+                                {% if record.history_object and record.history_object.skill %}
+                                    Удален навык: {{ record.history_object.skill.name }}
+                                {% else %}
+                                    Удаление
+                                {% endif %}
+                            </span>
                         {% else %}
                             <span class="text-muted">Изменений нет</span>
                         {% endif %}
