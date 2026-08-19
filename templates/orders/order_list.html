@@ -3,102 +3,72 @@
 
 {% block title %}{{ title }}{% endblock %}
 
-{% block extra_css %}
-<link href="{% static 'css/orders.css' %}" rel="stylesheet">
-<style>
-    .order-row:hover {
-        background-color: rgba(13, 110, 253, 0.04);
-        cursor: pointer;
-    }
-    .order-row .badge {
-        font-size: 0.75rem;
-    }
-    .progress-mini {
-        height: 4px;
-        width: 80px;
-        display: inline-block;
-        vertical-align: middle;
-    }
-    .table-cell-actions {
-        white-space: nowrap;
-        width: 1%;
-    }
-</style>
-{% endblock %}
-
 {% block breadcrumb_items %}
 <li class="breadcrumb-item active">{{ title }}</li>
 {% endblock %}
 
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h1><i class="fas fa-clipboard-list text-primary me-2"></i>{{ title }}</h1>
-    <a href="{% url 'orders:order_create' %}" class="btn btn-primary">
-        <i class="fas fa-plus me-2"></i>Создать заказ
-    </a>
-</div>
 
-<!-- ФИЛЬТР -->
-<div class="card mb-4">
-    <div class="card-body">
-        <div class="row g-2">
-            <div class="col-md-4">
-                <input type="text" id="filterSearch" class="form-control form-control-sm" 
-                       placeholder="Поиск по номеру, названию..." 
-                       value="{{ request.GET.search }}">
-            </div>
-            <div class="col-md-3">
-                <select id="filterStatus" class="form-select form-select-sm">
-                    <option value="">Все статусы</option>
-                    {% for code, label in statuses %}
-                        <option value="{{ code }}" {% if request.GET.status == code %}selected{% endif %}>
-                            {{ label }}
-                        </option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div class="col-md-3">
-                <select id="filterPriority" class="form-select form-select-sm">
-                    <option value="">Все приоритеты</option>
-                    <option value="high" {% if request.GET.priority == 'high' %}selected{% endif %}>Высокий</option>
-                    <option value="medium" {% if request.GET.priority == 'medium' %}selected{% endif %}>Средний</option>
-                    <option value="low" {% if request.GET.priority == 'low' %}selected{% endif %}>Низкий</option>
-                </select>
-            </div>
-            <div class="col-md-2 d-flex align-items-end">
-                <button type="button" class="btn btn-secondary w-100" id="applyFilterBtn">
-                    <i class="fas fa-search me-2"></i>Найти
-                </button>
-            </div>
+<!-- ============================================================ -->
+<!-- ЗАГОЛОВОК + ПОИСК + КНОПКА (ГОРИЗОНТАЛЬНО)                 -->
+<!-- ============================================================ -->
+<div class="d-flex align-items-center gap-3 mb-4 flex-wrap">
+    <h1 class="m-0 h2">
+        <i class="fas fa-clipboard-list text-primary me-2"></i>{{ title }}
+    </h1>
+    
+    <div class="flex-grow-1" style="max-width: 400px; min-width: 200px;">
+        <div class="input-group">
+            <span class="input-group-text bg-white border-end-0">
+                <i class="fas fa-search text-muted"></i>
+            </span>
+            <input type="text" 
+                   id="orderSearch" 
+                   class="form-control border-start-0" 
+                   placeholder="Поиск по номеру заказа..."
+                   value="{{ request.GET.search }}"
+                   autofocus
+                   style="border-radius: 0 24px 24px 0;">
         </div>
+    </div>
+    
+    <div class="ms-auto">
+        <a href="{% url 'orders:order_create' %}" class="btn btn-primary">
+            <i class="fas fa-plus me-2"></i>Создать заказ
+        </a>
     </div>
 </div>
 
-<!-- ТАБЛИЦА ЗАКАЗОВ -->
+<!-- ============================================================ -->
+<!-- ТАБЛИЦА ЗАКАЗОВ                                              -->
+<!-- ============================================================ -->
 <div class="card">
     <div class="card-body p-0">
         <div class="table-responsive">
-            <table class="table table-hover mb-0" id="filterTable">
+            <table class="table table-hover mb-0" id="ordersTable">
                 <thead class="table-light">
                     <tr>
-                        <th style="min-width: 130px;">Номер</th>
+                        <th style="min-width: 120px;">Номер</th>
                         <th>Заказ</th>
                         <th style="min-width: 140px;">Заказчик</th>
-                        <th style="min-width: 120px;">Статус</th>
-                        <th style="min-width: 90px;">Приоритет</th>
+                        <th style="min-width: 110px;">Статус</th>
+                        <th style="min-width: 80px;">Приоритет</th>
                         <th style="min-width: 100px;">Сдача</th>
                         <th style="min-width: 130px;">Прогресс</th>
-                        <th style="min-width: 140px;">Менеджер</th>
-                        <th style="width: 1%; white-space: nowrap;">Действия</th>
+                        <th style="min-width: 120px;">Менеджер</th>
+                        <th style="width: 100px; text-align: center; white-space: nowrap;">Действия</th>
                     </tr>
                 </thead>
-                <tbody>
+                <tbody id="ordersBody">
                     {% for order in orders %}
-                    <tr class="order-row" onclick="window.location.href='{% url 'orders:order_detail' order.pk %}'">
+                    <tr class="order-row" 
+                        data-number="{{ order.number|lower }}"
+                        data-url="{% url 'orders:order_detail' order.pk %}"
+                        style="cursor: pointer;">
                         <td>
-                            <strong>{{ order.number }}</strong>
+                            <span class="fw-bold text-primary">{{ order.number }}</span>
                         </td>
-                        <td>{{ order.name|truncatechars:40 }}</td>
+                        <td>{{ order.name|truncatechars:35 }}</td>
                         <td>{{ order.customer|default:'—'|truncatechars:20 }}</td>
                         <td>
                             <span class="badge badge-status-order {{ order.status }}">
@@ -113,34 +83,46 @@
                         <td>{{ order.planned_completion_date|date:"d.m.Y" }}</td>
                         <td>
                             <div class="d-flex align-items-center gap-2">
-                                <span>{{ order.progress }}%</span>
-                                <div class="progress progress-mini">
-                                    <div class="progress-bar bg-success" style="width: {{ order.progress }}%;"></div>
+                                <span class="small fw-bold text-{% if order.progress >= 80 %}success{% elif order.progress >= 50 %}warning{% else %}secondary{% endif %}">
+                                    {{ order.progress }}%
+                                </span>
+                                <div class="progress flex-grow-1" style="height:4px;width:80px;">
+                                    <div class="progress-bar" style="width: {{ order.progress }}%;"></div>
                                 </div>
                                 <span class="text-muted small">
                                     {{ order.completed_count }}/{{ order.stages.count }}
                                 </span>
                             </div>
                         </td>
-                        <td>{{ order.responsible_manager.get_full_name|default:order.responsible_manager.username|truncatechars:15 }}</td>
-                        <td class="table-cell-actions" onclick="event.stopPropagation();">
-                            <a href="{% url 'orders:order_edit' order.pk %}" class="btn btn-sm btn-outline-primary" title="Редактировать">
+                        <td>
+                            <small class="text-muted">{{ order.responsible_manager.get_full_name|default:order.responsible_manager.username|truncatechars:12 }}</small>
+                        </td>
+                        <td class="text-center" style="white-space: nowrap;">
+                            <a href="{% url 'orders:order_edit' order.pk %}" 
+                               class="btn btn-sm btn-outline-primary" 
+                               title="Редактировать"
+                               onclick="event.stopPropagation();">
                                 <i class="fas fa-edit"></i>
                             </a>
-                            <a href="{% url 'orders:order_detail' order.pk %}" class="btn btn-sm btn-outline-secondary" title="Открыть">
+                            <a href="{% url 'orders:order_detail' order.pk %}" 
+                               class="btn btn-sm btn-outline-secondary" 
+                               title="Открыть"
+                               onclick="event.stopPropagation();">
                                 <i class="fas fa-eye"></i>
                             </a>
                         </td>
                     </tr>
                     {% empty %}
-                    <tr>
-                        <td colspan="9" class="text-center py-4 text-muted">
-                            <i class="fas fa-clipboard-list fa-2x d-block mb-2"></i>
-                            Заказов пока нет
-                            <br>
-                            <a href="{% url 'orders:order_create' %}" class="btn btn-sm btn-primary mt-2">
-                                <i class="fas fa-plus me-2"></i>Создать первый заказ
-                            </a>
+                    <tr id="emptyRow">
+                        <td colspan="9">
+                            <div class="text-center py-5">
+                                <i class="fas fa-clipboard-list fa-3x text-muted mb-3"></i>
+                                <h5>Заказов пока нет</h5>
+                                <p class="text-muted">Создайте первый заказ, чтобы начать работу</p>
+                                <a href="{% url 'orders:order_create' %}" class="btn btn-primary btn-sm">
+                                    <i class="fas fa-plus me-2"></i>Создать первый заказ
+                                </a>
+                            </div>
                         </td>
                     </tr>
                     {% endfor %}
@@ -149,37 +131,90 @@
         </div>
     </div>
 </div>
+
 {% endblock %}
 
 {% block extra_js %}
-<script src="{% static 'js/filter.js' %}"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    const searchInput = document.getElementById('filterSearch');
-    const statusFilter = document.getElementById('filterStatus');
-    const priorityFilter = document.getElementById('filterPriority');
-    const applyBtn = document.getElementById('applyFilterBtn');
+    'use strict';
 
-    function applyFilter() {
-        const params = new URLSearchParams();
-        const search = searchInput.value.trim();
-        const status = statusFilter.value;
-        const priority = priorityFilter.value;
+    // =========================================================
+    // 1. КЛИК ПО СТРОКЕ (ПЕРЕХОД НА ДЕТАЛЬНУЮ СТРАНИЦУ)
+    // =========================================================
+    const rows = document.querySelectorAll('#ordersBody .order-row');
+    rows.forEach(function(row) {
+        row.addEventListener('click', function(e) {
+            // Если клик был по кнопке, не переходим
+            if (e.target.closest('.btn')) {
+                return;
+            }
+            const url = this.dataset.url;
+            if (url) {
+                window.location.href = url;
+            }
+        });
+    });
 
-        if (search) params.append('search', search);
-        if (status) params.append('status', status);
-        if (priority) params.append('priority', priority);
+    // =========================================================
+    // 2. ПОИСК
+    // =========================================================
+    const searchInput = document.getElementById('orderSearch');
+    const allRows = document.querySelectorAll('#ordersBody .order-row:not(#emptyRow)');
+    const emptyRow = document.getElementById('emptyRow');
 
-        window.location.href = '{% url "orders:order_list" %}' + '?' + params.toString();
+    function filterOrders() {
+        const query = searchInput.value.toLowerCase().trim();
+        let visible = 0;
+
+        allRows.forEach(function(row) {
+            const number = row.dataset.number || '';
+            
+            if (!query || number.includes(query)) {
+                row.style.display = '';
+                visible++;
+            } else {
+                row.style.display = 'none';
+            }
+        });
+
+        if (emptyRow) {
+            emptyRow.style.display = visible === 0 ? '' : 'none';
+        }
     }
 
-    applyBtn.addEventListener('click', applyFilter);
+    let searchTimeout;
+    searchInput.addEventListener('input', function() {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(filterOrders, 300);
+    });
 
-    searchInput.addEventListener('keyup', function(e) {
-        if (e.key === 'Enter') {
-            applyFilter();
+    // =========================================================
+    // 3. ГОРЯЧИЕ КЛАВИШИ
+    // =========================================================
+    document.addEventListener('keydown', function(e) {
+        // Ctrl+K или Cmd+K - фокус на поиск
+        if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+            e.preventDefault();
+            searchInput.focus();
+            searchInput.select();
+        }
+        // Escape - очистить поиск
+        if (e.key === 'Escape' && document.activeElement === searchInput) {
+            searchInput.value = '';
+            filterOrders();
+            searchInput.blur();
         }
     });
+
+    // =========================================================
+    // 4. ИНИЦИАЛИЗАЦИЯ
+    // =========================================================
+    if (searchInput.value) {
+        setTimeout(filterOrders, 100);
+    }
+
+    console.log('📋 Список заказов загружен');
 });
 </script>
 {% endblock %}

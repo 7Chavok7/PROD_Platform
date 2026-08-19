@@ -112,7 +112,7 @@ class Customer(models.Model):
         verbose_name='История изменений'
     )
     
-    class Mta:
+    class Meta:
         verbose_name = 'Контрагент'
         verbose_name_plural = 'Контрагенты'
         ordering = ['name']

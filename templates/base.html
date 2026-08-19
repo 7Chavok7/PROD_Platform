@@ -1,4 +1,4 @@
-<!--templates/base.html-->
+<!-- templates/base.html -->
 <!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -7,7 +7,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}PROD Platform{% endblock title %}</title>
 
-    <!-- Bootsrap 5 -->
+    <!-- Bootstrap 5 -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- FontAwesome 6 -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
@@ -15,6 +15,7 @@
     <!-- Собственные стили -->
     {% load static %}
     <link href="{% static 'css/style.css' %}" rel="stylesheet">
+    <link href="{% static 'css/orders.css' %}" rel="stylesheet">
 
     {% block extra_css %}{% endblock extra_css %}
 </head>
@@ -64,15 +65,29 @@
     </nav>
 
     <!-- ============================================================ -->
-    <!-- БОКОВОЕ МЕНЮ (САЙДБАР)                                        -->
+    <!-- БОКОВОЕ МЕНЮ (САЙДБАР)                                       -->
     <!-- ============================================================ -->
     <aside class="sidebar" id="sidebar">
         <nav class="nav flex-column">
 
             <!-- ========================================================== -->
-            <!-- 1. МОИ ЗАДАЧИ (ДЛЯ СОТРУДНИКОВ И МАСТЕРОВ)                -->
+            <!-- 1. ДАШБОРД                                                  -->
+            <!--    Доступ: Менеджер (свои заказы), Директор, Админ        -->
             <!-- ========================================================== -->
-            {% if user.employee and user.employee.get_access_level in 'employee,master' %}
+            {% if user.is_superuser or user.employee and user.employee.get_access_level in 'manager,director,admin' %}
+            <div class="nav-item">
+                <a class="nav-link {% if active_menu == 'dashboard' %}active{% endif %}"
+                   href="{% url 'orders:manager_dashboard' %}">
+                    <i class="fas fa-chart-pie me-2"></i> Дашборд
+                </a>
+            </div>
+            {% endif %}
+
+            <!-- ========================================================== -->
+            <!-- 2. МОИ ЗАДАЧИ                                               -->
+            <!--    Доступ: Сотрудник (employee, master), Админ             -->
+            <!-- ========================================================== -->
+            {% if user.employee and user.employee.get_access_level in 'employee,master' or user.is_superuser %}
             <div class="nav-item">
                 <a class="nav-link {% if active_menu == 'employee_tasks' %}active{% endif %}" 
                    href="{% url 'orders:employee_tasks' %}">
@@ -82,9 +97,10 @@
             {% endif %}
 
             <!-- ========================================================== -->
-            <!-- 2. ЗАКАЗЫ (ДЛЯ ВСЕХ, КРОМЕ ОБЫЧНЫХ СОТРУДНИКОВ)           -->
+            <!-- 3. ЗАКАЗЫ                                                  -->
+            <!--    Доступ: Менеджер (свои заказы), Директор, Админ        -->
             <!-- ========================================================== -->
-            {% if user.is_superuser or not user.employee or user.employee.get_access_level not in 'employee' %}
+            {% if user.is_superuser or user.employee and user.employee.get_access_level in 'manager,director,admin' %}
             <div class="nav-item">
                 <a class="nav-link {% if active_menu == 'orders' %}active{% endif %}"
                    href="{% url 'orders:order_list' %}">
@@ -94,7 +110,8 @@
             {% endif %}
 
             <!-- ========================================================== -->
-            <!-- 3. СПРАВОЧНИКИ (ДЛЯ МЕНЕДЖЕРОВ, ДИРЕКТОРОВ, АДМИНОВ И СУПЕРПОЛЬЗОВАТЕЛЯ) -->
+            <!-- 4. СПРАВОЧНИКИ                                             -->
+            <!--    Доступ: Директор, Менеджер, Админ                      -->
             <!-- ========================================================== -->
             {% if user.is_superuser or user.employee and user.employee.get_access_level in 'manager,director,admin' %}
             <div class="nav-item">
@@ -139,36 +156,35 @@
                             </a>
                         {% endif %}
                         
+                        <!-- ===== МОДУЛЬ: customers (контрагенты) ===== -->
+                        {% if has_customers %}
+                            <a class="nav-link {% if active_menu == 'customers' %}active{% endif %}"
+                               href="{% url 'customers:customer_list' %}">
+                                <i class="fas fa-handshake me-2"></i> Контрагенты
+                            </a>
+                        {% endif %}
                         
+                        <!-- ===== БУДУЩИЕ МОДУЛИ (заготовки) ===== -->
+                        {% if has_warehouse %}
+                            <a class="nav-link {% if active_menu == 'warehouse' %}active{% endif %}"
+                               href="#">
+                                <i class="fas fa-warehouse me-2"></i> Склад
+                            </a>
+                        {% endif %}
+                        
+                        {% if has_logistics %}
+                            <a class="nav-link {% if active_menu == 'logistics' %}active{% endif %}"
+                               href="#">
+                                <i class="fas fa-truck me-2"></i> Логистика
+                            </a>
+                        {% endif %}
                     </nav>
                 </div>
-                <!-- ===== МОДУЛЬ: customers (контрагенты) ===== -->
-                {% if has_customers %}
-                    <a class="nav-link {% if active_menu == 'customers' %}active{% endif %}"
-                       href="{% url 'customers:customer_list' %}">
-                        <i class="fas fa-handshake me-2"></i> Контрагенты
-                    </a>
-                {% endif %}
-                
-                <!-- ===== БУДУЩИЕ МОДУЛИ (заготовки) ===== -->
-                {% if has_warehouse %}
-                    <a class="nav-link {% if active_menu == 'warehouse' %}active{% endif %}"
-                       href="#">
-                        <i class="fas fa-warehouse me-2"></i> Склад
-                    </a>
-                {% endif %}
-                
-                {% if has_logistics %}
-                    <a class="nav-link {% if active_menu == 'logistics' %}active{% endif %}"
-                       href="#">
-                        <i class="fas fa-truck me-2"></i> Логистика
-                    </a>
-                {% endif %}
             </div>
             {% endif %}
 
             <!-- ========================================================== -->
-            <!-- 4. АДМИНИСТРИРОВАНИЕ (ТОЛЬКО ДЛЯ СУПЕРПОЛЬЗОВАТЕЛЯ)       -->
+            <!-- 5. АДМИНИСТРИРОВАНИЕ (ТОЛЬКО ДЛЯ АДМИНА)                  -->
             <!-- ========================================================== -->
             {% if user.is_superuser %}
             <div class="nav-item">
@@ -182,7 +198,7 @@
     </aside>
 
     <!-- ============================================================ -->
-    <!-- ОСНОВНОЙ КОНТЕНТ                                              -->
+    <!-- ОСНОВНОЙ КОНТЕНТ                                             -->
     <!-- ============================================================ -->
     <main class="main-content">
         <!-- ХЛЕБНЫЕ КРОШКИ -->
@@ -215,6 +231,7 @@
     <!-- ============================================================ -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="{% static 'js/main.js' %}"></script>
+    <script src="{% static 'js/filter.js' %}"></script>
     {% block extra_js %}{% endblock %}
 </body>
 </html>

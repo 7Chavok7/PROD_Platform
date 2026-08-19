@@ -1,9 +1,12 @@
 /* static/css/style.css | A.Grachev */
-/* ===== ОБЩИЕ СТИЛИ =====*/
+/* =========================================================
+   ОСНОВНЫЕ СТИЛИ (ДОПОЛНЕНИЯ К BOOTSTRAP 5)
+   ========================================================= */
+
+/* ===== ПЕРЕМЕННЫЕ ===== */
 :root {
     --sidebar-width: 260px;
     --navbar-height: 56px;
-    /* colors */
     --primary-color: #0d6efd;
     --danger-color: #dc3545;
     --success-color: #198754;
@@ -12,13 +15,16 @@
     --text-muted: #6c757d;
 }
 
+/* ===== БАЗОВЫЕ ===== */
 body {
     padding-top: var(--navbar-height);
     background-color: var(--bg-light);
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
-/* ===== САЙДБАР ===== */
+/* =========================================================
+   САЙДБАР
+   ========================================================= */
 .sidebar {
     position: fixed;
     top: var(--navbar-height);
@@ -30,7 +36,7 @@ body {
     background-color: #212529;
     box-shadow: inset -1px 0 0 rgba(0, 0, 0, 0.1);
     overflow-y: auto;
-    transition: transform 0.3 ease;
+    transition: transform 0.3s ease;
 }
 
 .sidebar .nav-link {
@@ -62,14 +68,28 @@ body {
     margin-top: 2px;
 }
 
-/* ===== ОСНОВНОЙ КОНТЕНТ ===== */
+.sidebar .nav-link.dropdown-toggle::after {
+    float: right;
+    margin-top: 8px;
+}
+
+.sidebar .collapse .nav-link {
+    padding-left: 48px;
+    font-size: 0.9rem;
+}
+
+/* =========================================================
+   ОСНОВНОЙ КОНТЕНТ
+   ========================================================= */
 .main-content {
     margin-left: var(--sidebar-width);
     padding: 24px 32px;
     min-height: calc(100vh - var(--navbar-height));
 }
 
-/* ===== КАРТОЧКИ ===== */
+/* =========================================================
+   КАРТОЧКИ
+   ========================================================= */
 .card {
     border: none;
     border-radius: 12px;
@@ -92,11 +112,9 @@ body {
     padding: 24px;
 }
 
-/* ===== ТАБЛИЦЫ ===== */
-.table {
-    font-size: 0.95rem;
-}
-
+/* =========================================================
+   ТАБЛИЦЫ
+   ========================================================= */
 .table thead th {
     border-bottom: 2px solid #dee2e6;
     font-weight: 600;
@@ -108,13 +126,9 @@ body {
     background-color: rgba(13, 110, 253, 0.04);
 }
 
-.table .actions {
-    display: flex;
-    gap: 4px;
-    flex-wrap: wrap;
-}
-
-/* ===== СТАТУСЫ (БЭЙДЖИ) ===== */
+/* =========================================================
+   СТАТУСЫ СОТРУДНИКОВ
+   ========================================================= */
 .badge-status {
     font-weight: 500;
     padding: 4px 12px;
@@ -141,16 +155,354 @@ body {
     color: #41464b;
 }
 
-/* ===== МОДАЛЬНЫЕ ОКНА ===== */
-.modal-header {
+/* =========================================================
+   СТАТУСЫ ЗАКАЗОВ
+   ========================================================= */
+.badge-status-order {
+    padding: 5px 14px;
+    border-radius: 20px;
+    font-weight: 600;
+    font-size: 0.75rem;
+    letter-spacing: 0.3px;
+    text-transform: uppercase;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.badge-status-order.draft {
+    background: #e9ecef;
+    color: #495057;
+}
+
+.badge-status-order.in_progress {
+    background: #cfe2ff;
+    color: #0a58ca;
+}
+
+.badge-status-order.completed {
+    background: #d1e7dd;
+    color: #0a3622;
+}
+
+.badge-status-order.cancelled {
+    background: #f8d7da;
+    color: #58151c;
+}
+
+/* =========================================================
+   ПРИОРИТЕТЫ
+   ========================================================= */
+.badge-priority {
+    padding: 3px 12px;
+    border-radius: 12px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.badge-priority.high {
+    background: #dc3545;
+    color: #fff;
+}
+
+.badge-priority.medium {
+    background: #ffc107;
+    color: #212529;
+}
+
+.badge-priority.low {
+    background: #198754;
+    color: #fff;
+}
+
+/* =========================================================
+   ПРОГРЕСС-БАР МИНИ
+   ========================================================= */
+.progress-mini {
+    height: 4px;
+    background: #e9ecef;
+    border-radius: 2px;
+    overflow: hidden;
+}
+
+.progress-mini .progress-bar {
+    background: linear-gradient(90deg, #2ecc71, #27ae60);
+    border-radius: 2px;
+    transition: width 0.6s ease;
+}
+
+/* =========================================================
+   ПОИСК (ГОРИЗОНТАЛЬНЫЙ)
+   ========================================================= */
+.search-wrapper {
+    position: relative;
+    flex: 1;
+    max-width: 400px;
+    min-width: 200px;
+}
+
+.search-wrapper .search-icon {
+    position: absolute;
+    left: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #adb5bd;
+    z-index: 1;
+}
+
+.search-wrapper .search-clear {
+    position: absolute;
+    right: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #adb5bd;
+    cursor: pointer;
+    display: none;
+    padding: 4px;
+    border-radius: 50%;
+    transition: all 0.2s ease;
+    z-index: 1;
+}
+
+.search-wrapper .search-clear:hover {
+    color: #dc3545;
+    background: rgba(220, 53, 69, 0.1);
+}
+
+.search-wrapper .search-clear.visible {
+    display: block;
+}
+
+.search-wrapper input {
+    padding-left: 40px;
+    padding-right: 40px;
+    border-radius: 24px;
+    border: 2px solid #e9ecef;
+    height: 44px;
+    transition: all 0.3s ease;
+    width: 100%;
+}
+
+.search-wrapper input:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 4px rgba(13, 110, 253, 0.12);
+}
+
+/* =========================================================
+   ЗАГОЛОВОК СТРАНИЦЫ
+   ========================================================= */
+.page-header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+.page-header .header-left {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex: 1;
+}
+
+.page-header .header-left h1 {
+    margin: 0;
+    font-size: 1.8rem;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+/* =========================================================
+   СТРОКА ЗАКАЗА В ТАБЛИЦЕ
+   ========================================================= */
+.order-row {
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.order-row:hover {
+    background: linear-gradient(90deg, rgba(13, 110, 253, 0.04) 0%, transparent 100%);
+}
+
+.order-row td {
+    vertical-align: middle;
+    padding: 12px 16px;
+}
+
+/* =========================================================
+   ПУСТОЕ СОСТОЯНИЕ
+   ========================================================= */
+.empty-state {
+    text-align: center;
+    padding: 60px 20px;
+}
+
+.empty-state .empty-icon {
+    font-size: 4rem;
+    color: #dee2e6;
+    margin-bottom: 16px;
+}
+
+/* =========================================================
+   АНИМАЦИИ
+   ========================================================= */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.fade-in {
+    animation: fadeIn 0.3s ease;
+}
+
+/* =========================================================
+   ФОРМЫ
+   ========================================================= */
+.form-control:focus,
+.form-select:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.15);
+}
+
+.required-field::after {
+    content: '*';
+    color: var(--danger-color);
+    margin-left: 4px;
+}
+
+/* =========================================================
+   ХЛЕБНЫЕ КРОШКИ
+   ========================================================= */
+.breadcrumb {
+    background: transparent;
+    padding: 0 0 16px 0;
+    margin: 0;
+    font-size: 0.9rem;
+}
+
+/* =========================================================
+   ИСТОРИЯ ИЗМЕНЕНИЙ
+   ========================================================= */
+.history-item {
+    border-left: 3px solid var(--primary-color);
+    padding-left: 12px;
+    margin-bottom: 8px;
+}
+
+.history-item .history-date {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+.history-item .history-user {
+    font-weight: 500;
+}
+
+.history-item .history-changes {
+    font-size: 0.85rem;
+    color: #495057;
+}
+
+.history-item.history-action-create {
+    border-left-color: var(--success-color);
+}
+
+.history-item.history-action-update {
+    border-left-color: var(--warning-color);
+}
+
+.history-item.history-action-delete {
+    border-left-color: var(--danger-color);
+}
+
+/* =========================================================
+   НАВЫКИ (ТЕГИ)
+   ========================================================= */
+.skill-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.skill-tag .remove-skill {
+    cursor: pointer;
+    opacity: 0.5;
+    transition: opacity 0.2s;
+    font-size: 0.8rem;
+}
+
+.skill-tag .remove-skill:hover {
+    opacity: 1;
+    color: var(--danger-color);
+}
+
+/* =========================================================
+   КАРТОЧКА ЗАКАЗА
+   ========================================================= */
+.order-card {
+    border-left: 4px solid var(--primary-color);
+    transition: box-shadow 0.2s;
+    cursor: pointer;
+}
+
+.order-card:hover {
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+}
+
+.order-card .card-header {
+    background-color: transparent;
     border-bottom: 1px solid #e9ecef;
 }
 
-.modal-footer {
-    border-top: 1px solid #e9ecef;
+/* =========================================================
+   ЭТАПЫ
+   ========================================================= */
+.stage-list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
 }
 
-/* ===== АДАПТИВНОСТЬ ===== */
+.stage-list .stage-item {
+    display: flex;
+    align-items: center;
+    padding: 6px 0;
+    border-bottom: 1px solid #f1f3f5;
+    gap: 12px;
+}
+
+.stage-list .stage-item:last-child {
+    border-bottom: none;
+}
+
+.stage-item .stage-number {
+    font-weight: 600;
+    color: var(--text-muted);
+    min-width: 30px;
+}
+
+.stage-item .stage-name {
+    flex: 1;
+}
+
+.stage-item .stage-status {
+    font-size: 0.7rem;
+}
+
+/* =========================================================
+   АДАПТИВНОСТЬ
+   ========================================================= */
 @media (max-width: 768px) {
     .sidebar {
         transform: translateX(-100%);
@@ -180,6 +532,31 @@ body {
     .sidebar-backdrop.show {
         display: block;
     }
+
+    .page-header {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .page-header .header-left {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .page-header .header-left h1 {
+        font-size: 1.4rem;
+        white-space: normal;
+    }
+
+    .search-wrapper {
+        max-width: 100%;
+        min-width: unset;
+    }
+
+    .order-row td {
+        padding: 8px 10px;
+        font-size: 0.85rem;
+    }
 }
 
 @media (min-width: 769px) {
@@ -188,7 +565,18 @@ body {
     }
 }
 
-/* ===== УТИЛИТЫ ===== */
+@media (max-width: 576px) {
+
+    .table td,
+    .table th {
+        padding: 8px 10px;
+        font-size: 0.8rem;
+    }
+}
+
+/* =========================================================
+   УТИЛИТЫ
+   ========================================================= */
 .text-truncate-2 {
     display: -webkit-box;
     -webkit-line-clamp: 2;
@@ -199,42 +587,4 @@ body {
 .hover-highlight:hover {
     background-color: rgba(13, 110, 253, 0.05);
     cursor: pointer;
-}
-
-/* ===== АНИМАЦИИ ===== */
-@keyframes fadeIn {
-    from {
-        opacity: 0;
-        transform: translateY(10px);
-    }
-
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-.fade-in {
-    animation: fadeIn 0.3s ease;
-}
-
-/* ===== ФОРМЫ ===== */
-.form-control:focus,
-.form-select:focus {
-    border-color: var(--primary-color);
-    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.15);
-}
-
-.required-field::after {
-    content: '*';
-    color: var(--danger-color);
-    margin-left: 4px;
-}
-
-/* ===== ХЛЕБНЫЕ КРОШКИ ===== */
-.breadcrumb {
-    background: transparent;
-    padding: 0 0 16px 0;
-    margin: 0;
-    font-size: 0.9rem;
 }

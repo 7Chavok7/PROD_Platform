@@ -223,7 +223,7 @@ class Employee(BaseWorker):
     )
     
     class Meta:
-        verbose_name = 'Сотрудник',
+        verbose_name = 'Сотрудник'
         verbose_name_plural = 'Сотрудники'
         ordering = ['last_name', 'first_name']
         

@@ -9,7 +9,7 @@ User = get_user_model()
 
 
 @receiver(post_save, sender=Employee)
-def sync_user_form_employee(sender, instance, created, **kwargs):
+def sync_user_from_employee(sender, instance, created, **kwargs):
     """
     Сигнал: после сохранения Employee обновляем данные в User.
     Если у оператора есть привязка к User - копируем ФИО и email.

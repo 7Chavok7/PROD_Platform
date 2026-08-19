@@ -1,3 +1,4 @@
+# orders/urls.py
 from django.urls import path
 from . import views
 
@@ -22,7 +23,7 @@ urlpatterns = [
     path('<int:order_pk>/stage/<int:stage_pk>/drawing/create/', views.drawing_create, name='drawing_create'),
     path('<int:order_pk>/stage/<int:stage_pk>/drawing/<int:pk>/delete/', views.drawing_delete, name='drawing_delete'),
     
-     # Личный кабинет сотрудника
+    # Личный кабинет сотрудника
     path('my-tasks/', views.employee_tasks, name='employee_tasks'),
 
     # Действия сотрудника над этапом
@@ -30,4 +31,7 @@ urlpatterns = [
     path('stage/<int:pk>/complete/', views.stage_complete, name='stage_complete'),
     path('stage/<int:pk>/defect/', views.stage_defect, name='stage_defect'),
     path('stage/<int:pk>/problem/', views.stage_problem, name='stage_problem'),
+    
+    # Дашборд
+    path('dashboard/', views.manager_dashboard, name='manager_dashboard'),
 ]

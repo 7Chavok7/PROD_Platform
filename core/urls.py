@@ -1,3 +1,4 @@
+# core/urls.py
 import os
 from django.contrib import admin
 from django.urls import path, include
@@ -13,7 +14,7 @@ urlpatterns = [
      # Главная страница — редирект по ролям
     path('', home_redirect, name='home'),
     
-    # ✅ Модули
+    # Модули
     path('employees/', include('employees.urls')),
     path('customers/', include('customers.urls')),
     path('orders/', include('orders.urls')),

@@ -61,7 +61,7 @@ class Order(models.Model):
     planned_completion_date = models.DateField(
         verbose_name='Плановая дата сдачи'
     )
-    actual_complition_date = models.DateField(
+    actual_completion_date = models.DateField(
         null=True,
         blank=True,
         verbose_name='Фактическая дата сдачи'
