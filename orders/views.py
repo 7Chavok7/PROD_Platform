@@ -275,7 +275,7 @@ def manager_dashboard(request):
         'overdue': overdue,
         'completion_rate': completion_rate,
         'active_orders': active_orders,
-        'gantt_data': json.dump(gantt_data),    # Передаем в JSON
+        'gantt_data': json.dumps(gantt_data),    # Передаем в JSON
         'status_data': status_data,
         'daily_labels': daily_labels,
         'daily_values': daily_values,
