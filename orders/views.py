@@ -1,3 +1,4 @@
+# orders/views.py | A.Grachev
 import json
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required, user_passes_test
@@ -20,6 +21,8 @@ from .forms import (
     DrawingForm, 
     OrderFileForm)
 from .services import OrderProgressService
+from .reports import CustomerReports
+from customers.models import Customer
 from employees.models import Employee
 
 
@@ -1409,3 +1412,81 @@ def stage_problem(request, pk):
         messages.warning(request, f'Проблема зафиксирована на этапе "{stage.name}"')
 
     return redirect('orders:employee_tasks')
+
+
+# =========================================================
+# =   ОТЧЕТЫ                                              =
+# =========================================================
+
+@login_required
+@user_passes_test(is_manager)
+def customer_orders_report(request):
+    """Отчет «Заказы по заказчикам»"""
+    
+    # Получаем параметры фильтрации
+    date_from = request.GET.get('date_from')
+    date_to = request.GET.get('date_to')
+    
+    # Генерируем отчет
+    from .reports import CustomerReports
+    report_data = CustomerReports.get_customer_orders_summary(date_from, date_to)
+    
+    # Общая статистика
+    total_orders = sum(item['total_orders'] for item in report_data)
+    total_completed = sum(item['completed_orders'] for item in report_data)
+    total_overdue = sum(item['overdue_orders'] for item in report_data)
+    
+    context = {
+        'report_data': report_data,
+        'total_orders': total_orders,
+        'total_completed': total_completed,
+        'total_overdue': total_overdue,
+        'date_from': date_from,
+        'date_to': date_to,
+        'active_menu': 'reports',
+        'title': 'Заказы по заказчикам',
+    }
+    return render(request, 'orders/reports/customer_orders.html', context)
+
+
+@login_required
+@user_passes_test(is_manager)
+def customer_reliability_report(request):
+    """Отчет «Надежность заказчика»"""
+    
+    # Получаем параметры фильтрации
+    date_from = request.GET.get('date_from')
+    date_to = request.GET.get('date_to')
+    
+    # Генерируем отчет
+    from .reports import CustomerReports
+    report_data = CustomerReports.get_customer_reliability(date_from, date_to)
+    
+    context = {
+        'report_data': report_data,
+        'date_from': date_from,
+        'date_to': date_to,
+        'active_menu': 'reports',
+        'title': 'Надежность заказчиков',
+    }
+    return render(request, 'orders/reports/customer_reliability.html', context)
+
+
+@login_required
+@user_passes_test(is_manager)
+def customer_detail_report(request, pk):
+    """Детальный отчет по заказчику"""
+    
+    from .reports import CustomerReports
+    from customers.models import Customer
+    
+    customer = get_object_or_404(Customer, pk=pk)
+    report_data = CustomerReports.get_customer_detail(pk)
+    
+    context = {
+        'customer': customer,
+        'report_data': report_data,
+        'active_menu': 'reports',
+        'title': f'Детали заказчика: {customer.name}',
+    }
+    return render(request, 'orders/reports/customer_order_list.html', context)

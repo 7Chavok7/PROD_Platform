@@ -1,4 +1,4 @@
-# core_app/templatetags/status_tags.py
+# core_app/templatetags/status_tags.py | A.Grachev
 from django import template
 
 register = template.Library()

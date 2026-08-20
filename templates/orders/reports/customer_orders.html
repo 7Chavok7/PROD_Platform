@@ -1,0 +1,176 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block breadcrumb_items %}
+<li class="breadcrumb-item"><a href="{% url 'orders:order_list' %}">Заказы</a></li>
+<li class="breadcrumb-item active">{{ title }}</li>
+{% endblock %}
+
+{% block content %}
+
+<!-- ============================================================ -->
+<!-- ЗАГОЛОВОК                                                    -->
+<!-- ============================================================ -->
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1><i class="fas fa-chart-bar text-primary me-2"></i>{{ title }}</h1>
+        <p class="text-muted small">Сводка по заказам в разрезе заказчиков</p>
+    </div>
+    <div>
+        <a href="{% url 'orders:customer_reliability_report' %}" class="btn btn-outline-secondary btn-sm">
+            <i class="fas fa-shield-alt me-1"></i>Надежность заказчиков
+        </a>
+        <button class="btn btn-outline-success btn-sm" onclick="window.print()">
+            <i class="fas fa-print me-1"></i>Печать
+        </button>
+    </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- ФИЛЬТРЫ                                                      -->
+<!-- ============================================================ -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3 align-items-end">
+            <div class="col-md-4">
+                <label class="form-label small">Дата с</label>
+                <input type="date" name="date_from" class="form-control form-control-sm" value="{{ date_from }}">
+            </div>
+            <div class="col-md-4">
+                <label class="form-label small">Дата по</label>
+                <input type="date" name="date_to" class="form-control form-control-sm" value="{{ date_to }}">
+            </div>
+            <div class="col-md-4">
+                <button type="submit" class="btn btn-primary btn-sm w-100">
+                    <i class="fas fa-filter me-1"></i>Применить фильтр
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- СТАТИСТИКА                                                   -->
+<!-- ============================================================ -->
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="card bg-primary text-white">
+            <div class="card-body text-center">
+                <h3 class="mb-0">{{ total_orders }}</h3>
+                <small>Всего заказов</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-success text-white">
+            <div class="card-body text-center">
+                <h3 class="mb-0">{{ total_completed }}</h3>
+                <small>Выполнено</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-danger text-white">
+            <div class="card-body text-center">
+                <h3 class="mb-0">{{ total_overdue }}</h3>
+                <small>Просрочено</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-info text-white">
+            <div class="card-body text-center">
+                <h3 class="mb-0">{{ report_data|length }}</h3>
+                <small>Заказчиков</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- ТАБЛИЦА ОТЧЕТА                                               -->
+<!-- ============================================================ -->
+<div class="card">
+    <div class="card-header">
+        <i class="fas fa-table me-2"></i>Сводка по заказчикам
+        <span class="badge bg-secondary ms-2">{{ report_data|length }}</span>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>#</th>
+                        <th>Заказчик</th>
+                        <th class="text-center">Заказов</th>
+                        <th class="text-center">Выполнено</th>
+                        <th class="text-center">Просрочено</th>
+                        <th class="text-center">Плановые часы</th>
+                        <th class="text-center">Выполнение</th>
+                        <th class="text-center">Ср. задержка</th>
+                        <th class="text-center">Детали</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in report_data %}
+                    <tr>
+                        <td>{{ forloop.counter }}</td>
+                        <td>
+                            <strong>{{ item.customer_name }}</strong>
+                            <br><small class="text-muted">{{ item.customer_short_name }}</small>
+                        </td>
+                        <td class="text-center"><span class="badge bg-secondary">{{ item.total_orders }}</span></td>
+                        <td class="text-center"><span class="badge bg-success">{{ item.completed_orders }}</span></td>
+                        <td class="text-center">
+                            {% if item.overdue_orders > 0 %}
+                                <span class="badge bg-danger">{{ item.overdue_orders }}</span>
+                            {% else %}
+                                <span class="badge bg-secondary">0</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-center">{{ item.total_planned_hours|floatformat:1 }}</td>
+                        <td class="text-center">
+                            <div class="d-flex align-items-center justify-content-center gap-2">
+                                <span class="fw-bold text-{% if item.completion_rate >= 90 %}success{% elif item.completion_rate >= 70 %}warning{% else %}danger{% endif %}">
+                                    {{ item.completion_rate }}%
+                                </span>
+                                <div class="progress" style="width: 60px; height: 6px;">
+                                    <div class="progress-bar bg-{% if item.completion_rate >= 90 %}success{% elif item.completion_rate >= 70 %}warning{% else %}danger{% endif %}" 
+                                         style="width: {{ item.completion_rate }}%;"></div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="text-center">
+                            {% if item.avg_delay_days > 0 %}
+                                <span class="text-danger">{{ item.avg_delay_days }} дн.</span>
+                            {% elif item.avg_delay_days == 0 %}
+                                <span class="text-success">0 дн.</span>
+                            {% else %}
+                                <span class="text-muted">—</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-center">
+                            <a href="{% url 'orders:customer_detail_report' item.customer_id %}" 
+                               class="btn btn-sm btn-outline-primary"
+                               title="Детали заказчика">
+                                <i class="fas fa-eye"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="9" class="text-center py-4 text-muted">
+                            <i class="fas fa-inbox fa-2x d-block mb-2"></i>
+                            Нет данных для отображения
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

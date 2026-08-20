@@ -1,4 +1,4 @@
-# orders/urls.py
+# orders/urls.py | A.Grachev
 from django.urls import path
 from . import views
 
@@ -34,6 +34,13 @@ urlpatterns = [
     path('stage/<int:pk>/complete/', views.stage_complete, name='stage_complete'),
     path('stage/<int:pk>/defect/', views.stage_defect, name='stage_defect'),
     path('stage/<int:pk>/problem/', views.stage_problem, name='stage_problem'),
+    
+    # =========================================================
+    #   ОТЧЕТЫ
+    # =========================================================
+    path('reports/customer-orders/', views.customer_orders_report, name='customer_orders_report'),
+    path('reports/customer-reliability/', views.customer_reliability_report, name='customer_reliability_report'),
+    path('reports/customer/<int:pk>/', views.customer_detail_report, name='customer_detail_report'),
     
     # Дашборд
     path('dashboard/', views.manager_dashboard, name='manager_dashboard'),

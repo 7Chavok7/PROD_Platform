@@ -1,3 +1,4 @@
+/* static/js/toast.js | A.Grachev */
 // Глобальный менеджер уведомлений
 const ToastManager = {
     show(message, type = 'info', duration = 3000) {

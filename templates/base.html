@@ -167,6 +167,24 @@
                         {% endif %}
                     </nav>
                 </div>
+                <div class="nav-item">
+                    <a class="nav-link dropdown-toggle" 
+                    href="#" id="reportsMenu" role="button" 
+                    data-bs-toggle="collapse" data-bs-target="#reportsSubmenu" aria-expanded="false">
+                        <i class="fas fa-chart-bar me-2"></i> Отчеты
+                    </a>
+                    <div class="collapse" id="reportsSubmenu">
+                        <nav class="nav flex-column ps-3">
+                            <a class="nav-link {% if active_menu == 'customer_orders_report' %}active{% endif %}"
+                            href="{% url 'orders:customer_orders_report' %}">
+                                <i class="fas fa-clipboard-list me-2"></i> Заказы по заказчикам
+                            </a>
+                            <a class="nav-link {% if active_menu == 'customer_reliability_report' %}active{% endif %}"
+                            href="{% url 'orders:customer_reliability_report' %}">
+                                <i class="fas fa-shield-alt me-2"></i> Надежность заказчиков
+                            </a>
+                        </nav>
+                    </div>
             </div>
             {% endif %}
 

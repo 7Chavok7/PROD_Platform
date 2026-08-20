@@ -1,4 +1,4 @@
-# orders/services.py
+# orders/services.py | A.Grachev
 from django.db.models import Count, Q
 from .models import Stage
 

@@ -1,4 +1,4 @@
-# core/urls.py
+# core/urls.py | A.Grachev
 import os
 from django.contrib import admin
 from django.urls import path, include
