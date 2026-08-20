@@ -78,6 +78,26 @@ class Order(models.Model):
         verbose_name='Файлы заказа'
     )
     
+    # Поля для удаления
+    is_deleted = models.BooleanField(
+        default=False,
+        verbose_name='Удален',
+        help_text='Помечен на удаление (виден только администраторам)'
+    )
+    deleted_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name='Дата удаления'
+    )
+    deleted_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='deleted_orders',
+        verbose_name='Кто удалил'
+    )
+    
     # метаданные
     created_at = models.DateTimeField(
         auto_now_add=True,
@@ -114,6 +134,20 @@ class Order(models.Model):
                 new_num = 1
             self.number = f'PR-{year}-{new_num:04d}'
         super().save(*args, **kwargs)
+        
+    def soft_delete(self, user):
+        """Мягкое удаление заказа"""
+        self.is_deleted = True
+        self.deleted_at = timezone.now()
+        self.deleted_by = user
+        self.save()
+        
+    def restore(self):
+        """Восстаноевление заказа"""
+        self.is_deleted = False
+        self.deleted_at = None
+        self.deleted_by = None
+        self.save()
         
 
 class OrderFile(models.Model):

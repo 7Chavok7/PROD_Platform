@@ -59,15 +59,15 @@ document.addEventListener('DOMContentLoaded', function() {
     // =========================================================
     // 3. ПОДТВЕРЖДЕНИЕ УДАЛЕНИЯ
     // =========================================================
-    const deleteButtons = document.querySelectorAll('.confirm-delete');
-    deleteButtons.forEach(function(btn) {
-        btn.addEventListener('click', function(e) {
-            const message = this.dataset.message || 'Вы уверены, что хотите удалить этот объект?';
-            if (!confirm(message)) {
-                e.preventDefault();
-            }
-        });
-    });
+    // const deleteButtons = document.querySelectorAll('.confirm-delete');
+    // deleteButtons.forEach(function(btn) {
+    //     btn.addEventListener('click', function(e) {
+    //         const message = this.dataset.message || 'Вы уверены, что хотите удалить этот объект?';
+    //         if (!confirm(message)) {
+    //             e.preventDefault();
+    //         }
+    //     });
+    // });
 
     // =========================================================
     // 4. АКТИВНОЕ СОСТОЯНИЕ МЕНЮ (ПОДСВЕТКА)

@@ -5,6 +5,38 @@
 
 {% block extra_css %}
 <link href="{% static 'css/orders.css' %}" rel="stylesheet">
+<style>
+    .order-card {
+        border-left: 4px solid #0d6efd;
+        transition: box-shadow 0.2s;
+        cursor: default;
+    }
+    .order-card:hover {
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    }
+    .order-card .card-header {
+        background-color: transparent;
+        border-bottom: 1px solid #e9ecef;
+    }
+    .order-card .card-body {
+        padding: 20px 24px;
+    }
+    .order-deleted-banner {
+        background: #dc3545;
+        color: #fff;
+        padding: 12px 20px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 12px;
+    }
+    .order-deleted-banner i {
+        font-size: 1.2rem;
+    }
+</style>
 {% endblock %}
 
 {% block breadcrumb_items %}
@@ -13,9 +45,52 @@
 {% endblock %}
 
 {% block content %}
+
+<!-- ============================================================ -->
+<!-- БАННЕР ДЛЯ УДАЛЕННОГО ЗАКАЗА                                -->
+<!-- ============================================================ -->
+{% if order.is_deleted %}
+<div class="order-deleted-banner">
+    <div>
+        <i class="fas fa-exclamation-triangle me-2"></i>
+        <strong>Внимание!</strong> Этот заказ помечен на удаление.
+        {% if is_admin %}
+            <span class="ms-2 text-light-emphasis">
+                (Удалил: {{ order.deleted_by.get_full_name|default:order.deleted_by.username }} 
+                {{ order.deleted_at|date:"d.m.Y H:i" }})
+            </span>
+        {% endif %}
+    </div>
+    {% if is_admin %}
+        <form method="post" action="{% url 'orders:order_restore' order.pk %}" class="d-inline">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-sm btn-outline-light">
+                <i class="fas fa-undo me-1"></i>Восстановить заказ
+            </button>
+        </form>
+    {% else %}
+        <span class="badge bg-light text-dark">
+            <i class="fas fa-lock me-1"></i>Доступ только для администратора
+        </span>
+    {% endif %}
+</div>
+{% endif %}
+
+<!-- ============================================================ -->
+<!-- ЗАГОЛОВОК                                                    -->
+<!-- ============================================================ -->
 <div class="d-flex justify-content-between align-items-start mb-4">
     <div>
-        <h1>{{ order.number }} — {{ order.name }}</h1>
+        <h1>
+            {% if order.is_deleted %}
+                <span class="text-muted">
+                    <i class="fas fa-trash text-danger me-2"></i>
+                    {{ order.number }} — {{ order.name }}
+                </span>
+            {% else %}
+                {{ order.number }} — {{ order.name }}
+            {% endif %}
+        </h1>
         <div class="d-flex gap-2 align-items-center flex-wrap">
             <span class="badge badge-status-order {{ order.status }}" style="font-size: 1rem;">
                 {{ order.get_status_display }}
@@ -26,28 +101,38 @@
             <span class="text-muted small">
                 <i class="fas fa-user me-1"></i>{{ order.responsible_manager.get_full_name|default:order.responsible_manager.username }}
             </span>
+            {% if order.is_deleted %}
+                <span class="badge bg-danger">Удален</span>
+            {% endif %}
         </div>
     </div>
     <div class="d-flex gap-2">
-        {% if order.status == 'draft' %}
-        <button class="btn btn-success btn-sm start-order" data-pk="{{ order.pk }}" data-number="{{ order.number }}">
-            <i class="fas fa-play me-1"></i>Запустить
-        </button>
+        {% if not order.is_deleted %}
+            {% if order.status == 'draft' %}
+                <button class="btn btn-success btn-sm start-order" data-pk="{{ order.pk }}" data-number="{{ order.number }}">
+                    <i class="fas fa-play me-1"></i>Запустить
+                </button>
+            {% endif %}
+            <a href="{% url 'orders:order_edit' order.pk %}" class="btn btn-outline-primary btn-sm">
+                <i class="fas fa-edit me-1"></i>Редактировать
+            </a>
+            <a href="{% url 'orders:order_delete' order.pk %}" class="btn btn-outline-danger btn-sm">
+                <i class="fas fa-trash me-1"></i>Удалить
+            </a>
         {% endif %}
-        <a href="{% url 'orders:order_edit' order.pk %}" class="btn btn-outline-primary btn-sm">
-            <i class="fas fa-edit me-1"></i>Редактировать
+        <a href="{% url 'orders:order_list' %}" class="btn btn-secondary btn-sm">
+            <i class="fas fa-arrow-left me-1"></i>Назад
         </a>
-        <button class="btn btn-outline-danger btn-sm delete-order" data-pk="{{ order.pk }}" data-number="{{ order.number }}">
-            <i class="fas fa-trash me-1"></i>Удалить
-        </button>
     </div>
 </div>
 
-<!-- КАРТОЧКА ЗАКАЗА -->
+<!-- ============================================================ -->
+<!-- КАРТОЧКА ЗАКАЗА                                              -->
+<!-- ============================================================ -->
 <div class="row">
     <div class="col-md-8">
         <!-- Данные заказа -->
-        <div class="card">
+        <div class="card order-card">
             <div class="card-header">
                 <i class="fas fa-info-circle me-2"></i>Информация о заказе
             </div>
@@ -75,6 +160,17 @@
                                 <th>Создан</th>
                                 <td>{{ order.created_at|date:"d.m.Y H:i" }}</td>
                             </tr>
+                            {% if order.is_deleted %}
+                                <tr>
+                                    <th>Удален</th>
+                                    <td>
+                                        <span class="text-danger">
+                                            {{ order.deleted_at|date:"d.m.Y H:i" }}
+                                            ({{ order.deleted_by.get_full_name|default:order.deleted_by.username }})
+                                        </span>
+                                    </td>
+                                </tr>
+                            {% endif %}
                         </table>
                     </div>
                     <div class="col-md-6">
@@ -100,9 +196,11 @@
         <div class="card mt-4">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <span><i class="fas fa-tasks me-2"></i>Маршрутный лист</span>
-                <a href="{% url 'orders:stage_create' order.pk %}" class="btn btn-sm btn-primary">
-                    <i class="fas fa-plus me-1"></i>Добавить этап
-                </a>
+                {% if not order.is_deleted %}
+                    <a href="{% url 'orders:stage_create' order.pk %}" class="btn btn-sm btn-primary">
+                        <i class="fas fa-plus me-1"></i>Добавить этап
+                    </a>
+                {% endif %}
             </div>
             <div class="card-body p-0">
                 <div class="table-responsive">
@@ -123,7 +221,13 @@
                             {% for stage in order.stages.all %}
                             <tr>
                                 <td>{{ stage.number }}</td>
-                                <td><a href="{% url 'orders:stage_detail' order.pk stage.pk %}">{{ stage.name }}</a></td>
+                                <td>
+                                    {% if not order.is_deleted %}
+                                        <a href="{% url 'orders:stage_detail' order.pk stage.pk %}">{{ stage.name }}</a>
+                                    {% else %}
+                                        {{ stage.name }}
+                                    {% endif %}
+                                </td>
                                 <td>{{ stage.department|default:'—' }}</td>
                                 <td>{{ stage.assigned_employee|default:'—' }}</td>
                                 <td>
@@ -134,12 +238,16 @@
                                 <td>{{ stage.planned_hours|default:'—' }}</td>
                                 <td>{{ stage.actual_hours|default:'—' }}</td>
                                 <td>
-                                    <a href="{% url 'orders:stage_edit' order.pk stage.pk %}" class="btn btn-sm btn-outline-primary">
-                                        <i class="fas fa-edit"></i>
-                                    </a>
-                                    <a href="{% url 'orders:stage_delete' order.pk stage.pk %}" class="btn btn-sm btn-outline-danger delete-stage">
-                                        <i class="fas fa-trash"></i>
-                                    </a>
+                                    {% if not order.is_deleted %}
+                                        <a href="{% url 'orders:stage_edit' order.pk stage.pk %}" class="btn btn-sm btn-outline-primary">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        <a href="{% url 'orders:stage_delete' order.pk stage.pk %}" class="btn btn-sm btn-outline-danger">
+                                            <i class="fas fa-trash"></i>
+                                        </a>
+                                    {% else %}
+                                        <span class="text-muted small">—</span>
+                                    {% endif %}
                                 </td>
                             </tr>
                             {% empty %}
@@ -162,9 +270,11 @@
         <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <span><i class="fas fa-paperclip me-2"></i>Файлы заказа</span>
-                <button type="button" class="btn btn-sm btn-outline-primary" id="uploadFileBtn" data-order-pk="{{ order.pk }}">
-                    <i class="fas fa-upload me-1"></i>Загрузить
-                </button>
+                {% if not order.is_deleted %}
+                    <button type="button" class="btn btn-sm btn-outline-primary" id="uploadFileBtn" data-order-pk="{{ order.pk }}">
+                        <i class="fas fa-upload me-1"></i>Загрузить
+                    </button>
+                {% endif %}
             </div>
             <div class="card-body">
                 {% for file in order.files.all %}
@@ -182,8 +292,31 @@
                 {% endfor %}
             </div>
         </div>
+
+        <!-- Метаданные -->
+        <div class="card mt-3">
+            <div class="card-header">
+                <i class="fas fa-clock me-2"></i>Метаданные
+            </div>
+            <div class="card-body text-muted small">
+                <div class="row">
+                    <div class="col-12">
+                        <strong>Создан:</strong> {{ order.created_at|date:"d.m.Y H:i" }}
+                    </div>
+                    <div class="col-12 mt-1">
+                        <strong>Обновлен:</strong> {{ order.updated_at|date:"d.m.Y H:i" }}
+                    </div>
+                    {% if order.is_deleted %}
+                        <div class="col-12 mt-1 text-danger">
+                            <strong>Удален:</strong> {{ order.deleted_at|date:"d.m.Y H:i" }}
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
     </div>
 </div>
+
 {% endblock %}
 
 {% block extra_js %}

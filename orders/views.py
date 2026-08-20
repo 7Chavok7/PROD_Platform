@@ -846,26 +846,27 @@ def stage_problem(request, pk):
 def order_list(request):
     """Список заказов с фильтрацией"""
     
-    # =========================================================
-    # 1. БАЗОВЫЙ ЗАПРОС (с учетом прав)
-    # =========================================================
-    # Если пользователь - суперпользователь или директор/админ
-    # показываем все заказы
+    # Базовый запрос с учетом прав
     if request.user.is_superuser or request.user.role in ['admin', 'director']:
+        # Администраторы видят все заказы, включая удаленные
         orders = Order.objects.select_related(
             'customer', 'responsible_manager'
         ).prefetch_related('stages').all()
+        
+        # Но по умолчанию скрываем удаленные (можно показать через параметр)
+        show_deleted = request.GET.get('show_deleted', 'false') == 'true'
+        if not show_deleted:
+            orders = orders.filter(is_deleted=False)
+            
     else:
-        # Менеджер - только свои заказы
+        # Менеджер - только свои, не удаленные
         orders = Order.objects.select_related(
             'customer', 'responsible_manager'
         ).prefetch_related('stages').filter(
-            responsible_manager=request.user
+            responsible_manager=request.user,
+            is_deleted=False
         )
     
-    # =========================================================
-    # 2. ФИЛЬТРЫ
-    # =========================================================
     # Фильтр по статусу
     status = request.GET.get('status')
     if status:
@@ -885,22 +886,16 @@ def order_list(request):
             Q(customer__name__icontains=search)
         )
     
-    # =========================================================
-    # 3. ДОБАВЛЯЕМ ПРОГРЕСС
-    # =========================================================
+    # Добавляем прогресс через сервис
     orders = OrderProgressService.get_orders_with_progress(orders)
     
-    # =========================================================
-    # 4. КОНТЕКСТ
-    # =========================================================
     context = {
         'orders': orders,
         'statuses': Order.Status.choices,
         'active_menu': 'orders',
         'title': 'Заказы',
-        # Для отображения в шаблоне
-        'is_manager': request.user.role == 'manager' and not request.user.is_superuser,
-        'show_all_orders': request.user.is_superuser or request.user.role in ['admin', 'director'],
+        'show_deleted': request.GET.get('show_deleted', 'false') == 'true',
+        'is_admin': request.user.is_superuser or request.user.role in ['admin', 'director'],
     }
     return render(request, 'orders/order_list.html', context)
 
@@ -909,7 +904,13 @@ def order_list(request):
 @user_passes_test(is_manager)
 def order_detail(request, pk):
     """Детальная страница заказа"""
-    order = get_object_or_404(Order.objects.prefetch_related('stages', 'files'), pk=pk)
+    order = get_object_or_404(Order, pk=pk)
+    
+    # Проверяем доступ к удаленному заказу
+    if order.is_deleted:
+        if not (request.user.is_superuser or request.user.role in ['admin', 'director']):
+            messages.error(request, 'Заказ был удален и недоступен для просмотра.')
+            return redirect('orders:order_list')
     
     # Используем сервис для расчёта
     progress = OrderProgressService.get_progress_percent(order)
@@ -921,6 +922,7 @@ def order_detail(request, pk):
         'completed_count': completed_count,
         'active_menu': 'orders',
         'title': f'{order.number} — {order.name}',
+        'is_admin': request.user.is_superuser or request.user.role in ['admin', 'director'],
     }
     return render(request, 'orders/order_detail.html', context)
 
@@ -982,10 +984,23 @@ def order_edit(request, pk):
 @login_required
 @user_passes_test(is_manager)
 def order_delete(request, pk):
+    """Удаление заказа (мягкое удаление)"""
     order = get_object_or_404(Order, pk=pk)
+    
+    # Проверяем права: только директор или админ могут удалять
+    if not (request.user.is_superuser or request.user.role in ['admin', 'director']):
+        messages.error(request, 'У вас нет прав на удаление заказов. Обратитесь к администратору.')
+        return redirect('orders:order_detail', pk=order.pk)
+    
+    # Проверяем, не удален ли уже заказ
+    if order.is_deleted:
+        messages.warning(request, f'Заказ {order.number} уже удален.')
+        return redirect('orders:order_list')
+    
     if request.method == 'POST':
-        order.delete()
-        messages.success(request, f'Заказ {order.number} удалён!')
+        # Мягкое удаление
+        order.soft_delete(request.user)
+        messages.success(request, f'Заказ {order.number} помечен на удаление. Он будет скрыт из общего списка.')
         return redirect('orders:order_list')
     
     context = {
@@ -995,6 +1010,27 @@ def order_delete(request, pk):
     }
     return render(request, 'orders/order_confirm_delete.html', context)
 
+@login_required
+@user_passes_test(is_manager)
+def order_restore(request, pk):
+    """Восстановление удаленного заказа"""
+    order = get_object_or_404(Order, pk=pk)
+    
+    # Проверяем права: только директор или админ могут восстанавливать
+    if not (request.user.is_superuser or request.user.role in ['admin', 'director']):
+        messages.error(request, 'У вас нет прав на восстановление заказов.')
+        return redirect('orders:order_detail', pk=order.pk)
+    
+    if not order.is_deleted:
+        messages.warning(request, f'Заказ {order.number} не был удален.')
+        return redirect('orders:order_detail', pk=order.pk)
+    
+    if request.method == 'POST':
+        order.restore()
+        messages.success(request, f'Заказ {order.number} успешно восстановлен!')
+        return redirect('orders:order_detail', pk=order.pk)
+    
+    return redirect('orders:order_detail', pk=order.pk)
 
 # =========================================================
 # =   ЭТАПЫ (CRUD)                                        =
