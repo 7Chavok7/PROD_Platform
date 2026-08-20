@@ -4,10 +4,6 @@
 
 {% block title %}{{ title }}{% endblock %}
 
-{% block extra_css %}
-<!-- Стили уже в style.css -->
-{% endblock %}
-
 {% block breadcrumb_items %}
 <li class="breadcrumb-item active">{{ title }}</li>
 {% endblock %}
@@ -41,63 +37,61 @@
 <div class="card">
     <div class="card-body p-0">
         <div class="table-responsive">
-            <table class="table table-hover table-bordered mb-0 matrix-table" id="skillMatrix">
-                <thead>
+            <table class="table table-hover table-bordered mb-0" style="font-size: 0.85rem;">
+                <thead class="table-light">
                     <tr>
-                        <th class="text-center" style="min-width: 180px; position: sticky; left: 0; background: #f8f9fa; z-index: 2;">
+                        <th class="text-center" style="min-width: 180px; position: sticky; left: 0; background: #f8f9fa; z-index: 2; vertical-align: middle;">
                             <i class="fas fa-user me-1"></i>Сотрудник
                         </th>
-                        <th class="text-center" style="min-width: 100px;">Участок</th>
+                        <th class="text-center" style="min-width: 120px; vertical-align: middle;">Участок</th>
                         {% for skill in skills %}
-                        <th class="text-center" title="{{ skill.name }}{% if skill.category %} ({{ skill.category }}){% endif %}">
-                            <span class="skill-name {% if skill.name|length > 15 %}long{% endif %}">
-                                {{ skill.name }}
-                            </span>
-                            {% if skill.category %}
-                                <span class="skill-category">{{ skill.category }}</span>
-                            {% endif %}
+                        <th class="text-center" style="min-width: 50px; max-width: 70px; font-weight: 600; font-size: 0.8rem; vertical-align: middle;" 
+                            title="{{ skill.name }}{% if skill.category %} ({{ skill.category }}){% endif %}">
+                            {{ skill.code|default:skill.name|truncatechars:6 }}
                         </th>
                         {% empty %}
                         <th class="text-center text-muted">Нет навыков</th>
                         {% endfor %}
                     </tr>
                 </thead>
-                <tbody id="matrixBody">
+                <tbody>
                     {% for row in matrix %}
                     <tr>
                         <!-- ФИО сотрудника (фиксированная колонка) -->
                         <td style="position: sticky; left: 0; background: white; z-index: 1; border-right: 2px solid #dee2e6;">
-                            <div>
-                                <span class="employee-name">
+                            <div class="d-flex align-items-center">
+                                <span class="fw-medium">
                                     <a href="{% url 'employees:employee_detail' row.employee.pk %}" class="text-decoration-none">
                                         {{ row.employee.short_name }}
                                     </a>
                                 </span>
-                                <span class="employee-status badge-status {{ row.employee.status }}">
+                                <span class="badge-status {{ row.employee.status }} ms-2" style="font-size: 0.6rem;">
                                     {{ row.employee.get_status_display }}
                                 </span>
                             </div>
                         </td>
                         <!-- Участок -->
-                        <td>
-                            {{ row.employee.department|default:'—' }}
+                        <td class="text-center">
+                            <span class="small">{{ row.employee.department|default:'—' }}</span>
                         </td>
                         
                         <!-- Навыки -->
                         {% for skill in skills %}
-                        <td class="skill-cell">
+                        <td class="text-center align-middle">
                             {% with level=row.levels|get_item:skill.id %}
                                 {% if level %}
-                                    <span class="badge-skill level-{{ level }}" title="Уровень {{ level }} из 5">
+                                    <span class="badge {% if level >= 4 %}bg-success{% elif level >= 3 %}bg-primary{% elif level >= 2 %}bg-warning text-dark{% else %}bg-secondary{% endif %}" 
+                                          style="font-size: 0.85rem; min-width: 28px; padding: 4px 8px;"
+                                          title="Уровень {{ level }} из 5 ({{ skill.name }})">
                                         {{ level }}
                                     </span>
                                 {% else %}
-                                    <span class="badge-skill empty">—</span>
+                                    <span class="text-muted" style="font-size: 0.7rem;">—</span>
                                 {% endif %}
                             {% endwith %}
                         </td>
                         {% empty %}
-                        <td class="skill-cell text-muted">—</td>
+                        <td class="text-center text-muted">Нет навыков</td>
                         {% endfor %}
                     </tr>
                     {% empty %}
@@ -113,6 +107,36 @@
         </div>
     </div>
 </div>
+
+<!-- ============================================================ -->
+<!-- РАСШИФРОВКА НАВЫКОВ                                           -->
+<!-- ============================================================ -->
+{% if skills %}
+<div class="card mt-3">
+    <div class="card-header bg-light">
+        <i class="fas fa-info-circle me-2"></i>Расшифровка навыков
+    </div>
+    <div class="card-body">
+        <div class="row g-2">
+            {% for skill in skills %}
+            <div class="col-lg-3 col-md-4 col-sm-6">
+                <div class="d-flex align-items-center p-2 border rounded bg-white">
+                    <span class="badge bg-secondary me-2" style="min-width: 30px; font-size: 0.7rem;">
+                        {{ skill.code|default:skill.name|truncatechars:6 }}
+                    </span>
+                    <span class="small">
+                        {{ skill.name }}
+                        {% if skill.category %}
+                            <br><small class="text-muted">{{ skill.category }}</small>
+                        {% endif %}
+                    </span>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endif %}
 
 <!-- СТАТИСТИКА + ФИЛЬТРЫ -->
 <div class="row mt-4">
@@ -164,11 +188,14 @@
 <script src="{% static 'js/skill_matrix.js' %}"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Автоматическое определение длинных названий для вертикального отображения
-    document.querySelectorAll('.matrix-table thead th .skill-name').forEach(function(el) {
-        const text = el.textContent.trim();
-        if (text.length > 12) {
-            el.classList.add('long');
+    // Автоматическое обновление title для ячеек с навыками
+    document.querySelectorAll('.matrix-table thead th').forEach(function(th) {
+        const text = th.textContent.trim();
+        if (text && text.length > 0 && !th.querySelector('i')) {
+            const skillName = th.getAttribute('title');
+            if (skillName) {
+                th.setAttribute('data-full-name', skillName);
+            }
         }
     });
 });

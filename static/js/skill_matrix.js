@@ -16,22 +16,18 @@ document.addEventListener('DOMContentLoaded', function() {
         const departmentValue = departmentFilter.value;
         
         rows.forEach(row => {
-            // Получаем ФИО из первой ячейки
             const nameCell = row.querySelector('td:first-child');
             const name = nameCell ? nameCell.textContent.toLowerCase() : '';
             
-            // Получаем участок из второй ячейки
             const deptCell = row.querySelector('td:nth-child(2)');
             const dept = deptCell ? deptCell.textContent.trim() : '';
             
             let show = true;
             
-            // Фильтр по ФИО
             if (searchValue && !name.includes(searchValue)) {
                 show = false;
             }
             
-            // Фильтр по участку
             if (departmentValue && dept !== departmentValue) {
                 show = false;
             }
@@ -40,18 +36,14 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // События
-    searchInput.addEventListener('input', filterMatrix);
-    departmentFilter.addEventListener('change', filterMatrix);
-    
-    // Дебаунс для поиска (задержка 300 мс)
     let timeoutId = null;
     searchInput.addEventListener('input', function() {
         clearTimeout(timeoutId);
         timeoutId = setTimeout(filterMatrix, 300);
     });
     
-    // Подсветка строк при наведении
+    departmentFilter.addEventListener('change', filterMatrix);
+    
     rows.forEach(row => {
         row.addEventListener('mouseenter', function() {
             this.style.backgroundColor = 'rgba(13, 110, 253, 0.05)';
@@ -60,6 +52,24 @@ document.addEventListener('DOMContentLoaded', function() {
             this.style.backgroundColor = '';
         });
     });
+    
+    // Добавляем подсказки для заголовков
+    document.querySelectorAll('.matrix-table thead th[title]').forEach(function(th) {
+        const fullName = th.getAttribute('title');
+        if (fullName) {
+            th.setAttribute('data-bs-toggle', 'tooltip');
+            th.setAttribute('data-bs-placement', 'top');
+            th.setAttribute('data-bs-title', fullName);
+        }
+    });
+    
+    // Инициализируем тултипы
+    if (typeof bootstrap !== 'undefined') {
+        const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        tooltipTriggerList.map(function(el) {
+            return new bootstrap.Tooltip(el);
+        });
+    }
     
     console.log('📊 Матрица квалификаций загружена');
 });
