@@ -14,6 +14,7 @@ urlpatterns = [
     path('<int:pk>/delete/', views.order_delete, name='order_delete'),
     path('<int:pk>/restore/', views.order_restore, name='order_restore'), 
     path('<int:pk>/upload/', views.order_upload_files, name='order_upload_files'),
+    path('<int:pk>/start/', views.order_start, name='order_start'),
     
     # Этапы
     path('<int:order_pk>/stage/create/', views.stage_create, name='stage_create'),

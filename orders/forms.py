@@ -14,12 +14,6 @@ User = get_user_model()
 class OrderForm(forms.ModelForm):
     """Форма для создания/редактирования заказа"""
     
-    order_files = forms.FileField(
-        required=False,
-        widget=forms.ClearableFileInput(attrs={'class': 'form-control'}),
-        label='Файлы заказа'
-    )
-    
     # Динамическое поле "Ответственный менеджер"
     if apps.is_installed('employees'):
         responsible_manager = forms.ModelChoiceField(
@@ -48,24 +42,28 @@ class OrderForm(forms.ModelForm):
             'customer': forms.Select(attrs={'class': 'form-select'}),
             'status': forms.Select(attrs={'class': 'form-select'}),
             'priority': forms.Select(attrs={'class': 'form-select'}),
-            'planned_completion_date': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
+            'planned_completion_date': forms.DateInput(
+                attrs={'type': 'date', 'class': 'form-control'},
+                format='%Y-%m-%d'
+            ),
             'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 4}),
         }
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['status'].required = False
+        
+        if self.instance and self.instance.pk and self.instance.planned_completion_date:
+            self.initial['planned_completion_date'] = self.instance.planned_completion_date.strftime('%Y-%m-%d')
     
     def save(self, commit=True):
         order = super().save(commit=False)
         
-        # Если модуль employees активен — берём выбранного пользователя
         if apps.is_installed('employees'):
             responsible_manager = self.cleaned_data.get('responsible_manager')
             if responsible_manager:
                 order.responsible_manager = responsible_manager
         else:
-            # Если модуль employees не активен — сохраняем текст в description
             responsible_manager_text = self.cleaned_data.get('responsible_manager')
             if responsible_manager_text:
                 order.description = f"Менеджер: {responsible_manager_text}\n\n{order.description or ''}"
@@ -73,27 +71,7 @@ class OrderForm(forms.ModelForm):
         if commit:
             order.save()
             self.save_m2m()
-            
-            # Сохраняем файлы через связь ManyToMany
-            files = self.cleaned_data.get('order_files')
-            if files:
-                if isinstance(files, list):
-                    for f in files:
-                        file_obj = OrderFile.objects.create(
-                            name=f.name,
-                            file=f,
-                            file_type=OrderFile.FileType.OTHER,
-                            uploaded_by=order.responsible_manager,
-                        )
-                        order.files.add(file_obj)
-                else:
-                    file_obj = OrderFile.objects.create(
-                        name=files.name,
-                        file=files,
-                        file_type=OrderFile.FileType.OTHER,
-                        uploaded_by=order.responsible_manager,
-                    )
-                    order.files.add(file_obj)
+        
         return order
 
 
@@ -103,7 +81,6 @@ class OrderForm(forms.ModelForm):
 class StageForm(forms.ModelForm):
     """Форма для создания/редактирования этапа"""
     
-    # Динамическое поле "Назначенный сотрудник"
     if apps.is_installed('employees'):
         from employees.models import Employee
         
@@ -135,8 +112,14 @@ class StageForm(forms.ModelForm):
             'department': forms.Select(attrs={'class': 'form-select'}),
             'required_skill': forms.Select(attrs={'class': 'form-select'}),
             'planned_hours': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.5'}),
-            'planned_start_date': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
-            'planned_finish_date': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
+            'planned_start_date': forms.DateInput(
+                attrs={'type': 'date', 'class': 'form-control'},
+                format='%Y-%m-%d'
+            ),
+            'planned_finish_date': forms.DateInput(
+                attrs={'type': 'date', 'class': 'form-control'},
+                format='%Y-%m-%d'
+            ),
             'status': forms.Select(attrs={'class': 'form-select'}),
             'comment': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
             'files': forms.SelectMultiple(attrs={'class': 'form-select'}),
@@ -144,24 +127,34 @@ class StageForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        
+        # ✅ Проверяем, что instance действительно Stage
         if apps.is_installed('employees'):
             from employees.models import Employee
-            if self.instance and self.instance.required_skill_id:
-                self.fields['assigned_employee'].queryset = Employee.objects.filter(
-                    status=Employee.Status.ACTIVE,
-                    skill__id=self.instance.required_skill_id
-                ).exclude(user__is_superuser=True).distinct()
+            
+            # Проверяем тип объекта
+            if self.instance and isinstance(self.instance, Stage):
+                # Если есть required_skill - фильтруем сотрудников
+                if self.instance.required_skill_id:
+                    self.fields['assigned_employee'].queryset = Employee.objects.filter(
+                        status=Employee.Status.ACTIVE,
+                        skill__id=self.instance.required_skill_id
+                    ).exclude(user__is_superuser=True).distinct()
+                
+                # Подставляем даты при редактировании
+                if self.instance.planned_start_date:
+                    self.initial['planned_start_date'] = self.instance.planned_start_date.strftime('%Y-%m-%d')
+                if self.instance.planned_finish_date:
+                    self.initial['planned_finish_date'] = self.instance.planned_finish_date.strftime('%Y-%m-%d')
     
     def save(self, commit=True):
         stage = super().save(commit=False)
         
-        # Если модуль employees активен — берём выбранного сотрудника
         if apps.is_installed('employees'):
             assigned_employee = self.cleaned_data.get('assigned_employee')
             if assigned_employee:
                 stage.assigned_employee = assigned_employee
         else:
-            # Если модуль employees не активен — сохраняем текст в comment
             assigned_employee_text = self.cleaned_data.get('assigned_employee')
             if assigned_employee_text:
                 stage.comment = f"Назначенный сотрудник: {assigned_employee_text}\n\n{stage.comment or ''}"
@@ -176,8 +169,6 @@ class StageForm(forms.ModelForm):
 # =   ФОРМА ДЛЯ ЧЕРТЕЖА (DRAWING)                         =
 # =========================================================
 class DrawingForm(forms.ModelForm):
-    """Форма для загрузки чертежа к этапу"""
-    
     class Meta:
         model = Drawing
         fields = ['name', 'file', 'description']
@@ -192,8 +183,6 @@ class DrawingForm(forms.ModelForm):
 # =   ФОРМА ДЛЯ ФАЙЛА ЗАКАЗА (OrderFile)                  =
 # =========================================================
 class OrderFileForm(forms.ModelForm):
-    """Форма для загрузки файла к заказу"""
-    
     class Meta:
         model = OrderFile
         fields = ['name', 'file', 'file_type', 'description']
@@ -209,8 +198,6 @@ class OrderFileForm(forms.ModelForm):
 # =   ФОРМА ДЛЯ ФИЛЬТРАЦИИ ЗАКАЗОВ                        =
 # =========================================================
 class OrderFilterForm(forms.Form):
-    """Форма для фильтрации списка заказов"""
-    
     STATUS_CHOICES = [('', 'Все статусы')] + list(Order.Status.choices)
     PRIORITY_CHOICES = [('', 'Все приоритеты')] + list(Order.Priority.choices)
     

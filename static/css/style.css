@@ -796,7 +796,7 @@ body {
     }
 }
 /* =========================================================
-   TOAST УВЕДОМЛЕНИЯ (ВМЕСТО ALERT)
+   TOAST УВЕДОМЛЕНИЯ
    ========================================================= */
 .custom-toast {
     position: fixed;
@@ -818,8 +818,6 @@ body {
         opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     font-size: 0.95rem;
     font-weight: 500;
-    backdrop-filter: blur(8px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .custom-toast.show {
@@ -854,7 +852,6 @@ body {
     opacity: 1;
 }
 
-/* Цвета toast */
 .custom-toast.toast-success {
     background: linear-gradient(135deg, #d1e7dd, #b7d9c8);
     color: #0a3622;
@@ -865,13 +862,13 @@ body {
     color: #198754;
 }
 
-.custom-toast.toast-error {
+.custom-toast.toast-danger {
     background: linear-gradient(135deg, #f8d7da, #f5c6cb);
     color: #58151c;
     border-color: #f1aeb5;
 }
 
-.custom-toast.toast-error i {
+.custom-toast.toast-danger i {
     color: #dc3545;
 }
 
@@ -893,22 +890,4 @@ body {
 
 .custom-toast.toast-info i {
     color: #0d6efd;
-}
-
-/* Множество уведомлений (стек) */
-.custom-toast+.custom-toast {
-    margin-top: 12px;
-}
-
-/* Адаптивность для мобильных */
-@media (max-width: 576px) {
-    .custom-toast {
-        top: 70px;
-        right: 12px;
-        left: 12px;
-        min-width: unset;
-        max-width: unset;
-        padding: 12px 16px;
-        font-size: 0.85rem;
-    }
 }

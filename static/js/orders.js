@@ -4,7 +4,7 @@ document.addEventListener('DOMContentLoaded', function() {
     'use strict';
 
     // =========================================================
-    // 1. ПЕРЕКЛЮЧЕНИЕ СТАТУСА ЗАКАЗА (с подтверждением)
+    // 1. ПЕРЕКЛЮЧЕНИЕ СТАТУСА ЗАКАЗА
     // =========================================================
     const statusChangeForms = document.querySelectorAll('.order-status-form');
     statusChangeForms.forEach(function(form) {
@@ -32,7 +32,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // =========================================================
-    // 3. УДАЛЕНИЕ ЗАКАЗА (с AJAX и улучшенной обработкой)
+    // 3. УДАЛЕНИЕ ЗАКАЗА
     // =========================================================
     const deleteOrderBtns = document.querySelectorAll('.delete-order');
     deleteOrderBtns.forEach(function(btn) {
@@ -44,7 +44,6 @@ document.addEventListener('DOMContentLoaded', function() {
             if (confirm(`Вы уверены, что хотите удалить заказ ${orderNumber}?`)) {
                 const deleteUrl = `/orders/${orderPk}/delete/`;
                 
-                // ✅ Улучшенная обработка ошибок
                 fetch(deleteUrl, {
                     method: 'POST',
                     headers: {
@@ -69,96 +68,125 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // =========================================================
-    // 4. ЗАГРУЗКА ФАЙЛОВ К ЗАКАЗУ (с улучшенной обратной связью)
+     // =========================================================
+    // 4. ЗАГРУЗКА ФАЙЛОВ (УНИВЕРСАЛЬНЫЙ ВАРИАНТ)
     // =========================================================
     const uploadBtn = document.getElementById('uploadFileBtn');
     if (uploadBtn) {
-        uploadBtn.addEventListener('click', function() {
+        uploadBtn.addEventListener('click', function(e) {
+            e.preventDefault();
             const orderPk = this.dataset.orderPk;
             
-            // Создаём скрытый input для выбора файла
-            const fileInput = document.createElement('input');
+            let fileInput = document.createElement('input');
             fileInput.type = 'file';
             fileInput.multiple = true;
             fileInput.accept = '.pdf,.jpg,.jpeg,.png,.dwg,.dxf,.zip,.doc,.docx,.xls,.xlsx';
+            fileInput.style.display = 'none';
+            document.body.appendChild(fileInput);
             
-            fileInput.addEventListener('change', function() {
+            fileInput.addEventListener('change', function(e) {
                 const files = this.files;
-                if (files.length === 0) return;
-                
-                const formData = new FormData();
-                for (let i = 0; i < files.length; i++) {
-                    formData.append('files', files[i]);
+                if (!files || files.length === 0) {
+                    document.body.removeChild(this);
+                    return;
                 }
-                formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]')?.value || getCookie('csrftoken'));
                 
-                // Показываем индикатор загрузки
-                const originalHtml = uploadBtn.innerHTML;
-                uploadBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Загрузка...';
-                uploadBtn.disabled = true;
-                
-                // ✅ Добавлен эндпоинт для загрузки
-                fetch(`/orders/${orderPk}/upload/`, {
-                    method: 'POST',
-                    body: formData,
-                })
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error(`HTTP error! status: ${response.status}`);
-                    }
-                    return response.json();
-                })
-                .then(data => {
-                    if (data.success) {
-                        // Обновляем список файлов
-                        const filesContainer = document.querySelector('.card-body');
-                        const noMsg = document.getElementById('noFilesMessage');
-                        if (noMsg) noMsg.remove();
-                        
-                        // Добавляем новые файлы
-                        data.files.forEach(function(file) {
-                            const fileDiv = document.createElement('div');
-                            fileDiv.className = 'd-flex justify-content-between align-items-center mb-2';
-                            fileDiv.innerHTML = `
-                                <div>
-                                    <i class="fas fa-file me-1"></i>
-                                    <a href="${file.url}" target="_blank" class="text-decoration-none">${file.name}</a>
-                                    <br>
-                                    <small class="text-muted">${file.type}</small>
-                                </div>
-                                <span class="text-muted small">v${file.version}</span>
-                            `;
-                            // Вставляем перед кнопкой (если есть)
-                            const uploadBtnContainer = filesContainer.querySelector('.btn');
-                            if (uploadBtnContainer) {
-                                filesContainer.insertBefore(fileDiv, uploadBtnContainer);
-                            } else {
-                                filesContainer.appendChild(fileDiv);
-                            }
-                        });
-                        
-                        showToast('Файлы успешно загружены!', 'success');
-                    } else {
-                        showToast('Ошибка загрузки: ' + (data.error || 'Неизвестная ошибка'), 'danger');
-                    }
-                })
-                .catch(error => {
-                    console.error('❌ Ошибка загрузки файлов:', error);
-                    showToast('Ошибка загрузки файлов. Попробуйте позже.', 'danger');
-                })
-                .finally(() => {
-                    uploadBtn.innerHTML = originalHtml;
-                    uploadBtn.disabled = false;
-                });
+                uploadFiles(orderPk, files);
+                document.body.removeChild(this);
             });
             
             fileInput.click();
+            
+            if (navigator.userAgent.toLowerCase().includes('yandex')) {
+                console.log('🟡 Yandex Browser detected, using fallback');
+                setTimeout(function() {
+                    if (!fileInput.files || fileInput.files.length === 0) {
+                        fileInput.click();
+                    }
+                }, 100);
+            }
+        });
+    }
+
+    // Функция загрузки файлов
+    function uploadFiles(orderPk, files) {
+        const uploadBtn = document.getElementById('uploadFileBtn');
+        const originalHtml = uploadBtn.innerHTML;
+        
+        uploadBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Загрузка...';
+        uploadBtn.disabled = true;
+        
+        const formData = new FormData();
+        for (let i = 0; i < files.length; i++) {
+            formData.append('files', files[i]);
+        }
+        
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value || getCookie('csrftoken');
+        formData.append('csrfmiddlewaretoken', csrfToken);
+        
+        fetch(`/orders/${orderPk}/upload/`, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRFToken': csrfToken,
+            },
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                // ✅ ИСПРАВЛЕНО: ищем правильный контейнер для файлов
+                // Ищем карточку с файлами (правую колонку)
+                const filesContainer = document.querySelector('.card-body:has(.fa-paperclip)') || 
+                                      document.querySelector('.card .card-body');
+                
+                // Или ищем родителя кнопки загрузки
+                const cardBody = uploadBtn.closest('.card-body');
+                
+                if (cardBody) {
+                    const noMsg = cardBody.querySelector('#noFilesMessage');
+                    if (noMsg) noMsg.remove();
+                    
+                    data.files.forEach(function(file) {
+                        const fileDiv = document.createElement('div');
+                        fileDiv.className = 'd-flex justify-content-between align-items-center mb-2';
+                        fileDiv.innerHTML = `
+                            <div>
+                                <i class="fas fa-file me-1"></i>
+                                <a href="${file.url}" target="_blank" class="text-decoration-none">${file.name}</a>
+                                <br>
+                                <small class="text-muted">${file.type}</small>
+                            </div>
+                            <span class="text-muted small">v${file.version}</span>
+                        `;
+                        // Вставляем перед кнопкой
+                        cardBody.insertBefore(fileDiv, uploadBtn);
+                    });
+                    
+                    showToast('Файлы успешно загружены!', 'success');
+                } else {
+                    showToast('Ошибка: контейнер для файлов не найден', 'danger');
+                }
+            } else {
+                showToast('Ошибка загрузки: ' + (data.error || 'Неизвестная ошибка'), 'danger');
+            }
+        })
+        .catch(error => {
+            console.error('❌ Ошибка загрузки файлов:', error);
+            showToast('Ошибка загрузки файлов. Попробуйте позже.', 'danger');
+        })
+        .finally(() => {
+            uploadBtn.innerHTML = originalHtml;
+            uploadBtn.disabled = false;
         });
     }
 
     // =========================================================
-    // 5. ЗАПУСК ЗАКАЗА (заглушка - TODO)
+    // 5. ЗАПУСК ЗАКАЗА ✅ ИСПРАВЛЕНО
     // =========================================================
     const startOrderBtns = document.querySelectorAll('.start-order');
     startOrderBtns.forEach(function(btn) {
@@ -167,13 +195,8 @@ document.addEventListener('DOMContentLoaded', function() {
             const orderPk = this.dataset.pk;
             const orderNumber = this.dataset.number || 'заказ';
             
-            // TODO: реализовать логику запуска заказа
-            // Пока просто показываем уведомление
-            showToast(`Функция "Запустить заказ ${orderNumber}" будет реализована в следующей версии.`, 'info');
-            
-            /* 
-            // ✅ ЗАКОММЕНТИРОВАННЫЙ КОД ДЛЯ БУДУЩЕЙ РЕАЛИЗАЦИИ
             if (confirm(`Запустить заказ ${orderNumber}?`)) {
+                // Показываем индикатор загрузки
                 const originalHtml = this.innerHTML;
                 this.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Запуск...';
                 this.disabled = true;
@@ -208,25 +231,13 @@ document.addEventListener('DOMContentLoaded', function() {
                     this.disabled = false;
                 });
             }
-            */
         });
     });
 
     // =========================================================
-    // 6. ПРОГРЕСС-БАР В КАРТОЧКЕ ЗАКАЗА (автообновление)
-    // =========================================================
-    const progressBars = document.querySelectorAll('.order-progress');
-    progressBars.forEach(function(bar) {
-        const orderPk = bar.dataset.orderPk;
-        // ✅ Можно добавить периодическое обновление
-        // setInterval(() => updateProgress(orderPk), 30000);
-    });
-
-    // =========================================================
-    // 7. ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
+    // 6. ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
     // =========================================================
     
-    // Получение CSRF-токена из куки
     function getCookie(name) {
         let cookieValue = null;
         if (document.cookie && document.cookie !== '') {
@@ -242,9 +253,7 @@ document.addEventListener('DOMContentLoaded', function() {
         return cookieValue;
     }
 
-    // Создание и показ уведомления (toast) - улучшенная версия
     function showToast(message, type = 'info', duration = 3000) {
-        // Удаляем старые уведомления
         document.querySelectorAll('.custom-toast').forEach(el => el.remove());
         
         const types = {
@@ -255,141 +264,29 @@ document.addEventListener('DOMContentLoaded', function() {
         };
         
         const toast = document.createElement('div');
-        toast.className = `custom-toast alert alert-${type} alert-dismissible fade show position-fixed`;
-        toast.style.cssText = `
-            top: 80px;
-            right: 20px;
-            z-index: 9999;
-            max-width: 400px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-            animation: slideInRight 0.3s ease;
-        `;
+        toast.className = `custom-toast toast-${type}`;
         toast.innerHTML = `
-            <i class="fas fa-${types[type] || 'info-circle'} me-2"></i>
-            ${message}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            <div class="toast-content">
+                <i class="fas fa-${types[type] || 'info-circle'}"></i>
+                <span>${message}</span>
+            </div>
+            <button class="toast-close">&times;</button>
         `;
-        
-        // Добавляем анимацию через CSS
-        if (!document.getElementById('toastStyles')) {
-            const style = document.createElement('style');
-            style.id = 'toastStyles';
-            style.textContent = `
-                @keyframes slideInRight {
-                    from { transform: translateX(100%); opacity: 0; }
-                    to { transform: translateX(0); opacity: 1; }
-                }
-            `;
-            document.head.appendChild(style);
-        }
-        
         document.body.appendChild(toast);
+        setTimeout(() => toast.classList.add('show'), 50);
         
-        // Автоматическое закрытие
+        toast.querySelector('.toast-close').addEventListener('click', function() {
+            toast.classList.remove('show');
+            setTimeout(() => toast.remove(), 300);
+        });
+        
         if (duration > 0) {
             setTimeout(() => {
-                const closeBtn = toast.querySelector('.btn-close');
-                if (closeBtn) closeBtn.click();
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 300);
             }, duration);
         }
-        
         return toast;
-    }
-
-    // Функция обновления прогресса (для будущего использования)
-    function updateProgress(orderPk) {
-        fetch(`/orders/${orderPk}/progress/`)
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    const progressBar = document.querySelector(`.order-progress[data-order-pk="${orderPk}"]`);
-                    if (progressBar) {
-                        progressBar.style.width = data.progress + '%';
-                        progressBar.textContent = data.progress + '%';
-                    }
-                }
-            })
-            .catch(error => console.error('Ошибка обновления прогресса:', error));
-    }
-
-    // =========================================================
-    // 8. АВТОМАТИЧЕСКИЙ ПОДСЧЁТ ПЛАНОВЫХ ЧАСОВ (отображение)
-    // =========================================================
-    const totalPlannedHours = document.getElementById('totalPlannedHours');
-    if (totalPlannedHours) {
-        const hours = parseFloat(totalPlannedHours.dataset.total) || 0;
-        totalPlannedHours.textContent = hours.toFixed(1);
-    }
-
-    // =========================================================
-    // 9. МАСКА ДЛЯ ДАТ (установка минимальной даты = сегодня)
-    // =========================================================
-    const dateInputs = document.querySelectorAll('input[type="date"]');
-    dateInputs.forEach(function(input) {
-        if (!input.value) {
-            const today = new Date().toISOString().split('T')[0];
-            input.min = today;
-        }
-    });
-
-    // =========================================================
-    // 10. ФИЛЬТР СТАТУСА (быстрое переключение)
-    // =========================================================
-    const statusFilter = document.getElementById('statusFilter');
-    if (statusFilter) {
-        statusFilter.addEventListener('change', function() {
-            const form = this.closest('form');
-            if (form) {
-                form.submit();
-            } else {
-                // Если формы нет, делаем редирект с параметром
-                const url = new URL(window.location.href);
-                url.searchParams.set('status', this.value);
-                window.location.href = url.toString();
-            }
-        });
-    }
-
-    // =========================================================
-    // 11. КНОПКА "ПРИМЕНИТЬ ФИЛЬТР" (для order_list)
-    // =========================================================
-    const applyFilterBtn = document.getElementById('applyFilterBtn');
-    if (applyFilterBtn) {
-        applyFilterBtn.addEventListener('click', function() {
-            const searchInput = document.getElementById('filterSearch');
-            const statusSelect = document.getElementById('filterStatus');
-            const prioritySelect = document.getElementById('filterPriority');
-            
-            const params = new URLSearchParams();
-            if (searchInput && searchInput.value.trim()) {
-                params.append('search', searchInput.value.trim());
-            }
-            if (statusSelect && statusSelect.value) {
-                params.append('status', statusSelect.value);
-            }
-            if (prioritySelect && prioritySelect.value) {
-                params.append('priority', prioritySelect.value);
-            }
-            
-            const url = new URL(window.location.href);
-            url.search = params.toString();
-            window.location.href = url.toString();
-        });
-    }
-
-    // =========================================================
-    // 12. КЛАВИША ENTER В ПОЛЕ ПОИСКА
-    // =========================================================
-    const searchInput = document.getElementById('filterSearch');
-    if (searchInput) {
-        searchInput.addEventListener('keyup', function(e) {
-            if (e.key === 'Enter') {
-                const applyBtn = document.getElementById('applyFilterBtn');
-                if (applyBtn) {
-                    applyBtn.click();
-                }
-            }
-        });
     }
 
     console.log('📦 Заказы загружены');

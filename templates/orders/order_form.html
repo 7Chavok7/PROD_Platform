@@ -14,7 +14,7 @@
         <h4 class="mb-0"><i class="fas fa-clipboard-list me-2"></i>{{ title }}</h4>
     </div>
     <div class="card-body">
-        <form method="post" enctype="multipart/form-data">
+        <form method="post">
             {% csrf_token %}
 
             <div class="row g-3">
@@ -44,7 +44,7 @@
                     </small>
                 </div>
 
-                <!-- ✅ ОТВЕТСТВЕННЫЙ МЕНЕДЖЕР -->
+                <!-- ОТВЕТСТВЕННЫЙ МЕНЕДЖЕР -->
                 <div class="col-md-6">
                     <label class="form-label required-field" for="{{ form.responsible_manager.id_for_label }}">
                         {{ form.responsible_manager.label }}
@@ -89,18 +89,6 @@
                     {% if form.planned_completion_date.errors %}
                         <div class="text-danger small mt-1">{{ form.planned_completion_date.errors }}</div>
                     {% endif %}
-                </div>
-
-                <!-- ФАЙЛЫ ЗАКАЗА -->
-                <div class="col-md-12">
-                    <label class="form-label" for="{{ form.order_files.id_for_label }}">
-                        {{ form.order_files.label }}
-                    </label>
-                    {{ form.order_files }}
-                    {% if form.order_files.errors %}
-                        <div class="text-danger small mt-1">{{ form.order_files.errors }}</div>
-                    {% endif %}
-                    <small class="text-muted">Договор, ТЗ, смета и другие файлы (можно выбрать несколько)</small>
                 </div>
 
                 <!-- ОПИСАНИЕ -->

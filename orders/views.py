@@ -361,15 +361,6 @@ def order_create(request):
     if request.method == 'POST':
         form = OrderForm(request.POST, request.FILES)
         
-        # ✅ ОТЛАДКА: выводим ошибки формы
-        if not form.is_valid():
-            print("❌ ФОРМА НЕ ВАЛИДНА!")
-            print(form.errors)
-            print(form.cleaned_data)
-        else:
-            print("✅ ФОРМА ВАЛИДНА")
-            print(form.cleaned_data)
-        
         if form.is_valid():
             order = form.save(commit=False)
             order.save()
@@ -1067,6 +1058,42 @@ def order_upload_files(request, pk):
         'success': True,
         'files': uploaded_files
     })
+    
+@login_required
+@user_passes_test(is_manager)
+@require_POST
+def order_start(request, pk):
+    """Запуск заказа (изменение статуса с draft на in_progress)"""
+    order = get_object_or_404(Order, pk=pk)
+    
+    # Проверяем права
+    if order.is_deleted:
+        return JsonResponse({'success': False, 'error': 'Заказ удален'})
+    
+    if order.status != Order.Status.DRAFT:
+        return JsonResponse({'success': False, 'error': f'Заказ уже в статусе {order.get_status_display()}'})
+    
+    # Проверяем, есть ли этапы
+    if order.stages.count() == 0:
+        return JsonResponse({'success': False, 'error': 'Нельзя запустить заказ без этапов'})
+    
+    # Меняем статус
+    order.status = Order.Status.IN_PROGRESS
+    order.save()
+    
+    # Логируем в историю
+    from django.contrib.admin.models import LogEntry, ADDITION
+    from django.contrib.contenttypes.models import ContentType
+    LogEntry.objects.log_action(
+        user_id=request.user.id,
+        content_type_id=ContentType.objects.get_for_model(order).pk,
+        object_id=order.pk,
+        object_repr=str(order),
+        action_flag=ADDITION,
+        change_message=f'Заказ запущен пользователем {request.user.username}'
+    )
+    
+    return JsonResponse({'success': True, 'message': f'Заказ {order.number} запущен'})
 
 @login_required
 @user_passes_test(is_manager)
