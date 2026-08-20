@@ -219,7 +219,6 @@ class Employee(BaseWorker):
     # История изменений
     history = HistoricalRecords(
         inherit=True,
-        history_change_reason_field='change_reason',
         verbose_name='История изменений'
     )
     
