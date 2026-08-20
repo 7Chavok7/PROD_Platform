@@ -1030,7 +1030,6 @@ def order_upload_files(request, pk):
     """Загрузка файлов к заказу (AJAX)"""
     order = get_object_or_404(Order, pk=pk)
     
-    # Проверяем права
     if order.is_deleted:
         if not (request.user.is_superuser or request.user.role in ['admin', 'director']):
             return JsonResponse({'success': False, 'error': 'Заказ удален'})
@@ -1041,24 +1040,124 @@ def order_upload_files(request, pk):
     
     uploaded_files = []
     for f in files:
+        # Автоматически определяем тип файла
+        file_type = OrderFile.FileType.OTHER
+        ext = f.name.split('.')[-1].lower()
+        if ext in ['pdf', 'doc', 'docx']:
+            file_type = OrderFile.FileType.CONTRACT
+        elif ext in ['xls', 'xlsx']:
+            file_type = OrderFile.FileType.ESTIMATE
+        elif ext in ['dwg', 'dxf', 'jpg', 'jpeg', 'png']:
+            file_type = OrderFile.FileType.DRAW
+        
         file_obj = OrderFile.objects.create(
             name=f.name,
             file=f,
-            file_type=OrderFile.FileType.OTHER,
+            file_type=file_type,
             uploaded_by=request.user,
+            version=1
         )
         order.files.add(file_obj)
         uploaded_files.append({
+            'id': file_obj.id,
             'name': file_obj.name,
             'url': file_obj.file.url,
             'type': file_obj.get_file_type_display(),
-            'version': 1
+            'version': file_obj.version,
         })
     
     return JsonResponse({
         'success': True,
         'files': uploaded_files
     })
+
+
+@login_required
+@user_passes_test(is_manager)
+@require_POST
+def order_file_delete(request, pk, file_pk):
+    """Удаление файла заказа"""
+    try:
+        file_obj = get_object_or_404(OrderFile, pk=file_pk)
+        order = get_object_or_404(Order, pk=pk)
+        
+        # Проверяем, что файл принадлежит заказу
+        if file_obj not in order.files.all():
+            return JsonResponse({'success': False, 'error': 'Файл не принадлежит этому заказу'})
+        
+        # Проверяем права
+        if order.is_deleted:
+            if not (request.user.is_superuser or request.user.role in ['admin', 'director']):
+                return JsonResponse({'success': False, 'error': 'Заказ удален'})
+        
+        # Удаляем файл
+        file_obj.delete()
+        return JsonResponse({'success': True})
+        
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)})
+
+
+@login_required
+@user_passes_test(is_manager)
+@require_POST
+def order_file_replace(request, pk, file_pk):
+    """Замена файла заказа (с увеличением версии)"""
+    try:
+        file_obj = get_object_or_404(OrderFile, pk=file_pk)
+        order = get_object_or_404(Order, pk=pk)
+        
+        if file_obj not in order.files.all():
+            return JsonResponse({'success': False, 'error': 'Файл не принадлежит этому заказу'})
+        
+        if order.is_deleted:
+            if not (request.user.is_superuser or request.user.role in ['admin', 'director']):
+                return JsonResponse({'success': False, 'error': 'Заказ удален'})
+        
+        new_file = request.FILES.get('file')
+        if not new_file:
+            return JsonResponse({'success': False, 'error': 'Файл не выбран'})
+        
+        # Определяем тип нового файла по расширению
+        file_type = file_obj.file_type  # сохраняем старый тип
+        ext = new_file.name.split('.')[-1].lower()
+        if ext in ['pdf', 'doc', 'docx']:
+            file_type = OrderFile.FileType.CONTRACT
+        elif ext in ['xls', 'xlsx']:
+            file_type = OrderFile.FileType.ESTIMATE
+        elif ext in ['dwg', 'dxf', 'jpg', 'jpeg', 'png']:
+            file_type = OrderFile.FileType.DRAW
+        
+        old_name = file_obj.name
+        old_version = file_obj.version
+        
+        new_version = old_version + 1
+        new_file_obj = OrderFile.objects.create(
+            name=new_file.name,
+            file=new_file,
+            file_type=file_type,  # Сохраняем определенный тип
+            uploaded_by=request.user,
+            description=f'Версия {new_version}: замена файла {old_name} (была v{old_version})',
+            version=new_version
+        )
+        
+        order.files.add(new_file_obj)
+        file_obj.delete()
+        
+        return JsonResponse({
+            'success': True,
+            'file': {
+                'id': new_file_obj.id,
+                'name': new_file_obj.name,
+                'url': new_file_obj.file.url,
+                'type': new_file_obj.get_file_type_display(),
+                'version': new_file_obj.version,
+            }
+        })
+        
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)})
+    
     
 @login_required
 @user_passes_test(is_manager)
@@ -1190,6 +1289,142 @@ def stage_detail(request, order_pk, pk):
         'title': f'Этап {stage.number}: {stage.name}',
     }
     return render(request, 'orders/stage_detail.html', context)
+
+
+@login_required
+@user_passes_test(is_manager)
+@require_POST
+def stage_upload_drawing(request, order_pk, stage_pk):
+    """Загрузка чертежа к этапу (AJAX)"""
+    stage = get_object_or_404(Stage, pk=stage_pk, order_id=order_pk)
+    order = get_object_or_404(Order, pk=order_pk)
+    
+    if order.is_deleted:
+        if not (request.user.is_superuser or request.user.role in ['admin', 'director']):
+            return JsonResponse({'success': False, 'error': 'Заказ удален'})
+    
+    file = request.FILES.get('file')
+    if not file:
+        return JsonResponse({'success': False, 'error': 'Файл не выбран'})
+    
+    # Определяем версию чертежа
+    last_drawing = stage.drawings.order_by('-version').first()
+    version = (last_drawing.version + 1) if last_drawing else 1
+    
+    # Создаем чертеж
+    drawing = Drawing.objects.create(
+        name=file.name,
+        file=file,
+        stage=stage,
+        uploaded_by=request.user,
+        version=version
+    )
+    
+    # Явно добавляем чертеж к этапу
+    stage.files.add(drawing)
+    
+    return JsonResponse({
+        'success': True,
+        'drawing': {
+            'id': drawing.id,
+            'name': drawing.name,
+            'url': drawing.file.url,
+            'version': drawing.version,
+            'uploaded_by': drawing.uploaded_by.username,
+        }
+    })
+    
+
+@login_required
+@user_passes_test(is_manager)
+@require_POST
+def drawing_delete(request, order_pk, stage_pk, pk):
+    """Удаление чертежа"""
+    drawing = get_object_or_404(Drawing, pk=pk, stage_id=stage_pk, stage__order_id=order_pk)
+    
+    if request.method == 'POST':
+        drawing.delete()
+        messages.success(request, f'Чертеж "{drawing.name}" удалён!')
+        return redirect('orders:stage_detail', order_pk=order_pk, pk=stage_pk)
+    
+    context = {
+        'drawing': drawing,
+        'stage': drawing.stage,
+        'order': drawing.stage.order,
+        'title': f'Удаление чертежа {drawing.name}',
+        'active_menu': 'orders',
+    }
+    return render(request, 'orders/drawing_confirm_delete.html', context)
+
+
+@login_required
+@user_passes_test(is_manager)
+@require_POST
+def drawing_replace(request, order_pk, stage_pk, pk):
+    """Замена чертежа (AJAX)"""
+    try:
+        drawing = get_object_or_404(Drawing, pk=pk, stage_id=stage_pk, stage__order_id=order_pk)
+        stage = drawing.stage
+        order = get_object_or_404(Order, pk=order_pk)
+        
+        if order.is_deleted:
+            if not (request.user.is_superuser or request.user.role in ['admin', 'director']):
+                return JsonResponse({'success': False, 'error': 'Заказ удален'})
+        
+        new_file = request.FILES.get('file')
+        if not new_file:
+            return JsonResponse({'success': False, 'error': 'Файл не выбран'})
+        
+        # Создаем новую версию
+        new_version = drawing.version + 1
+        new_drawing = Drawing.objects.create(
+            name=new_file.name,
+            file=new_file,
+            stage=stage,
+            uploaded_by=request.user,
+            version=new_version
+        )
+        
+        # Добавляем новый чертеж к этапу
+        stage.files.add(new_drawing)
+        
+        # Удаляем старый чертеж
+        drawing.delete()
+        
+        return JsonResponse({
+            'success': True,
+            'drawing': {
+                'id': new_drawing.id,
+                'name': new_drawing.name,
+                'url': new_drawing.file.url,
+                'version': new_drawing.version,
+                'uploaded_by': new_drawing.uploaded_by.username,
+            }
+        })
+        
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)})
+    
+
+@login_required
+@user_passes_test(is_manager)
+@require_POST
+def drawing_delete_ajax(request, order_pk, stage_pk, pk):
+    """Удаление чертежа (AJAX)"""
+    try:
+        drawing = get_object_or_404(Drawing, pk=pk, stage_id=stage_pk, stage__order_id=order_pk)
+        stage = drawing.stage
+        order = get_object_or_404(Order, pk=order_pk)
+        
+        if order.is_deleted:
+            if not (request.user.is_superuser or request.user.role in ['admin', 'director']):
+                return JsonResponse({'success': False, 'error': 'Заказ удален'})
+        
+        drawing.delete()
+        return JsonResponse({'success': True})
+        
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)})
 
 
 @login_required

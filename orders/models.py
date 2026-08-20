@@ -155,7 +155,7 @@ class OrderFile(models.Model):
     class FileType(models.TextChoices):
         CONTRACT = 'contract', 'Договор'
         SPECIFICATION = 'specification', 'Техническое задание'
-        DRAW = 'draw', 'чертеж'
+        DRAW = 'draw', 'Чертеж'
         ESTIMATE = 'estimate', 'Смета'
         OTHER = 'other', 'Другое'
         
@@ -167,7 +167,7 @@ class OrderFile(models.Model):
         upload_to='orders/%Y/%m/%d',
         verbose_name='Файл'
     )
-    file_type=models.CharField(
+    file_type = models.CharField(
         max_length=20,
         choices=FileType.choices,
         default=FileType.OTHER,
@@ -187,6 +187,10 @@ class OrderFile(models.Model):
         blank=True,
         verbose_name='Описание'
     )
+    version = models.PositiveIntegerField(
+        default=1,
+        verbose_name='Версия файла'
+    )
     history = HistoricalRecords(
         inherit=True,
         verbose_name='История изменений'
@@ -199,6 +203,41 @@ class OrderFile(models.Model):
         
     def __str__(self):
         return f'{self.name} ({self.get_file_type_display()})'
+    
+    def get_file_icon(self):
+        """Возвращает иконку для типа файла"""
+        icons = {
+            'pdf': 'fa-file-pdf',
+            'doc': 'fa-file-word',
+            'docx': 'fa-file-word',
+            'xls': 'fa-file-excel',
+            'xlsx': 'fa-file-excel',
+            'jpg': 'fa-file-image',
+            'jpeg': 'fa-file-image',
+            'png': 'fa-file-image',
+            'dwg': 'fa-file',
+            'dxf': 'fa-file',
+            'zip': 'fa-file-archive',
+        }
+        ext = self.name.split('.')[-1].lower()
+        return icons.get(ext, 'fa-file')
+    
+    def detect_file_type(self):
+        """Определяет тип файла по расширению"""
+        ext = self.name.split('.')[-1].lower()
+        mapping = {
+            'pdf': self.FileType.CONTRACT,
+            'doc': self.FileType.CONTRACT,
+            'docx': self.FileType.CONTRACT,
+            'xls': self.FileType.ESTIMATE,
+            'xlsx': self.FileType.ESTIMATE,
+            'dwg': self.FileType.DRAW,
+            'dxf': self.FileType.DRAW,
+            'jpg': self.FileType.DRAW,
+            'jpeg': self.FileType.DRAW,
+            'png': self.FileType.DRAW,
+        }
+        return mapping.get(ext, self.FileType.OTHER)
     
     
 class Stage(models.Model):

@@ -3,11 +3,15 @@
 
 {% block title %}{{ title }}{% endblock %}
 
+{% block extra_css %}
+<link href="{% static 'css/orders.css' %}" rel="stylesheet">
+{% endblock extra_css%}
+
 {% block breadcrumb_items %}
 <li class="breadcrumb-item"><a href="{% url 'orders:order_list' %}">Заказы</a></li>
 <li class="breadcrumb-item"><a href="{% url 'orders:order_detail' stage.order.pk %}">{{ stage.order.number }}</a></li>
 <li class="breadcrumb-item active">{{ stage }}</li>
-{% endblock %}
+{% endblock breadcrumb_items%}
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-start mb-4">
@@ -111,32 +115,56 @@
             </div>
         </div>
     </div>
+    
+    <!-- БЛОК ЧЕРТЕЖЕЙ -->
     <div class="col-md-4">
         <div class="card">
             <div class="card-header">
                 <i class="fas fa-paperclip me-2"></i>Чертежи
             </div>
-            <div class="card-body">
+            <div class="card-body" id="drawingsContainer">
                 {% for drawing in stage.files.all %}
-                <div class="d-flex justify-content-between align-items-center mb-2">
+                <div class="d-flex justify-content-between align-items-center mb-2 drawing-item" data-drawing-id="{{ drawing.id }}">
                     <div>
                         <i class="fas fa-file me-1"></i>
                         <a href="{{ drawing.file.url }}" target="_blank" class="text-decoration-none">{{ drawing.name }}</a>
                         <br>
                         <small class="text-muted">v{{ drawing.version }}</small>
                     </div>
-                    <span class="text-muted small">
-                        <i class="fas fa-user me-1"></i>{{ drawing.uploaded_by.username }}
-                    </span>
+                    <div class="d-flex gap-1">
+                        <button class="btn btn-sm btn-outline-primary replace-drawing" 
+                                data-drawing-id="{{ drawing.id }}"
+                                data-stage-pk="{{ stage.pk }}"
+                                data-order-pk="{{ stage.order.pk }}"
+                                title="Заменить чертеж">
+                            <i class="fas fa-sync-alt"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-danger delete-drawing" 
+                                data-drawing-id="{{ drawing.id }}"
+                                data-stage-pk="{{ stage.pk }}"
+                                data-order-pk="{{ stage.order.pk }}"
+                                title="Удалить чертеж">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
                 </div>
                 {% empty %}
-                <p class="text-muted small">Чертежи не загружены</p>
+                <p class="text-muted small" id="noDrawingsMessage">Чертежи не загружены</p>
                 {% endfor %}
-                <button class="btn btn-sm btn-outline-secondary w-100 mt-2">
+                
+                <button class="btn btn-sm btn-outline-secondary w-100 mt-2" 
+                        id="uploadDrawingBtn" 
+                        data-stage-pk="{{ stage.pk }}"
+                        data-order-pk="{{ stage.order.pk }}">
                     <i class="fas fa-upload me-1"></i>Загрузить чертеж
                 </button>
             </div>
         </div>
     </div>
 </div>
-{% endblock %}
+
+{% endblock content%}
+
+{% block extra_js %}
+<script src="{% static 'js/stage_detail.js' %}"></script>
+{% endblock extra_js%}

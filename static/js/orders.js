@@ -68,7 +68,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-     // =========================================================
+    // =========================================================
     // 4. ЗАГРУЗКА ФАЙЛОВ (УНИВЕРСАЛЬНЫЙ ВАРИАНТ)
     // =========================================================
     const uploadBtn = document.getElementById('uploadFileBtn');
@@ -139,32 +139,46 @@ document.addEventListener('DOMContentLoaded', function() {
         })
         .then(data => {
             if (data.success) {
-                // Ищем карточку с файлами (правую колонку)
-                const filesContainer = document.querySelector('.card-body:has(.fa-paperclip)') || 
-                                      document.querySelector('.card .card-body');
+                const filesContainer = document.getElementById('filesContainer');
                 
-                // Или ищем родителя кнопки загрузки
-                const cardBody = uploadBtn.closest('.card-body');
-                
-                if (cardBody) {
-                    const noMsg = cardBody.querySelector('#noFilesMessage');
+                if (filesContainer) {
+                    const noMsg = filesContainer.querySelector('#noFilesMessage');
                     if (noMsg) noMsg.remove();
                     
-                    data.files.forEach(function(file) {
+                     data.files.forEach(function(file) {
                         const fileDiv = document.createElement('div');
-                        fileDiv.className = 'd-flex justify-content-between align-items-center mb-2';
+                        fileDiv.className = 'd-flex justify-content-between align-items-center mb-2 file-item';
+                        fileDiv.dataset.fileId = file.id;
                         fileDiv.innerHTML = `
                             <div>
                                 <i class="fas fa-file me-1"></i>
                                 <a href="${file.url}" target="_blank" class="text-decoration-none">${file.name}</a>
                                 <br>
-                                <small class="text-muted">${file.type}</small>
+                                <small class="text-muted">
+                                    ${file.type}  
+                                    ${file.version > 1 ? `<span class="badge bg-secondary">v${file.version}</span>` : ''}
+                                </small>
                             </div>
-                            <span class="text-muted small">v${file.version}</span>
+                            <div class="d-flex gap-1">
+                                <button class="btn btn-sm btn-outline-primary replace-file" 
+                                        data-file-id="${file.id}"
+                                        data-order-pk="${orderPk}"
+                                        title="Заменить файл">
+                                    <i class="fas fa-sync-alt"></i>
+                                </button>
+                                <button class="btn btn-sm btn-outline-danger delete-file" 
+                                        data-file-id="${file.id}"
+                                        data-order-pk="${orderPk}"
+                                        title="Удалить файл">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
                         `;
-                        // Вставляем перед кнопкой
-                        cardBody.insertBefore(fileDiv, uploadBtn);
+                        filesContainer.appendChild(fileDiv);
                     });
+                    
+                    // Добавляем обработчики для новых кнопок
+                    attachFileHandlers();
                     
                     showToast('Файлы успешно загружены!', 'success');
                 } else {
@@ -185,7 +199,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // =========================================================
-    // 5. ЗАПУСК ЗАКАЗА ✅ ИСПРАВЛЕНО
+    // 5. ЗАПУСК ЗАКАЗА
     // =========================================================
     const startOrderBtns = document.querySelectorAll('.start-order');
     startOrderBtns.forEach(function(btn) {
@@ -195,7 +209,6 @@ document.addEventListener('DOMContentLoaded', function() {
             const orderNumber = this.dataset.number || 'заказ';
             
             if (confirm(`Запустить заказ ${orderNumber}?`)) {
-                // Показываем индикатор загрузки
                 const originalHtml = this.innerHTML;
                 this.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Запуск...';
                 this.disabled = true;
@@ -234,7 +247,170 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // =========================================================
-    // 6. ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
+    // 6. УДАЛЕНИЕ ФАЙЛА
+    // =========================================================
+    function handleDeleteFile(e) {
+        e.stopPropagation();
+        const fileId = this.dataset.fileId;
+        const orderPk = this.dataset.orderPk;
+        
+        if (!confirm('Удалить этот файл?')) return;
+        
+        // ✅ ПРАВИЛЬНЫЙ URL
+        fetch(`/orders/${orderPk}/file/${fileId}/delete/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+                'Content-Type': 'application/json',
+            },
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                const fileItem = document.querySelector(`.file-item[data-file-id="${fileId}"]`);
+                if (fileItem) {
+                    fileItem.remove();
+                    const remaining = document.querySelectorAll('.file-item');
+                    const noMsg = document.getElementById('noFilesMessage');
+                    if (remaining.length === 0 && !noMsg) {
+                        const container = document.getElementById('filesContainer');
+                        const msg = document.createElement('p');
+                        msg.className = 'text-muted small';
+                        msg.id = 'noFilesMessage';
+                        msg.textContent = 'Файлы не загружены';
+                        container.appendChild(msg);
+                    }
+                }
+                showToast('Файл успешно удален', 'success');
+            } else {
+                showToast('Ошибка: ' + (data.error || 'Неизвестная ошибка'), 'danger');
+            }
+        })
+        .catch(error => {
+            console.error('❌ Ошибка удаления файла:', error);
+            showToast('Ошибка удаления файла', 'danger');
+        });
+    }
+
+    // =========================================================
+    // 7. ЗАМЕНА ФАЙЛА
+    // =========================================================
+    function handleReplaceFile(e) {
+        e.stopPropagation();
+        const fileId = this.dataset.fileId;
+        const orderPk = this.dataset.orderPk;
+        const btn = this;
+        
+        if (!fileId || isNaN(fileId)) {
+            showToast('Ошибка: некорректный ID файла', 'danger');
+            return;
+        }
+        
+        const fileInput = document.createElement('input');
+        fileInput.type = 'file';
+        fileInput.accept = '.pdf,.jpg,.jpeg,.png,.dwg,.dxf,.zip,.doc,.docx,.xls,.xlsx';
+        fileInput.style.display = 'none';
+        document.body.appendChild(fileInput);
+        
+        fileInput.addEventListener('change', function(e) {
+            const file = this.files[0];
+            if (!file) {
+                document.body.removeChild(this);
+                return;
+            }
+            
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('csrfmiddlewaretoken', getCookie('csrftoken'));
+            
+            const originalHtml = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+            btn.disabled = true;
+            
+            fetch(`/orders/${orderPk}/file/${fileId}/replace/`, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken'),
+                },
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.success) {
+                    // Находим элемент старого файла и заменяем его содержимое
+                    const fileItem = document.querySelector(`.file-item[data-file-id="${fileId}"]`);
+                    if (fileItem) {
+                        // Обновляем содержимое
+                        const fileInfo = fileItem.querySelector('div:first-child');
+                        fileInfo.innerHTML = `
+                            <i class="fas fa-file me-1"></i>
+                            <a href="${data.file.url}" target="_blank" class="text-decoration-none">${data.file.name}</a>
+                            <br>
+                            <small class="text-muted">
+                                ${data.file.type}
+                                ${data.file.version > 1 ? `<span class="badge bg-secondary">v${data.file.version}</span>` : ''}
+                            </small>
+                        `;
+                        // Обновляем ID файла
+                        fileItem.dataset.fileId = data.file.id;
+                        const buttons = fileItem.querySelectorAll('.btn');
+                        buttons.forEach(b => {
+                            b.dataset.fileId = data.file.id;
+                        });
+                    }
+                    showToast(`Файл успешно заменен (v${data.file.version})`, 'success');
+                } else {
+                    showToast('Ошибка: ' + (data.error || 'Неизвестная ошибка'), 'danger');
+                }
+            })
+            .catch(error => {
+                console.error('❌ Ошибка замены файла:', error);
+                showToast('Ошибка замены файла', 'danger');
+            })
+            .finally(() => {
+                btn.innerHTML = originalHtml;
+                btn.disabled = false;
+                document.body.removeChild(this);
+            });
+        });
+        
+        fileInput.click();
+    }
+
+    // =========================================================
+    // 8. ПРИВЯЗКА ОБРАБОТЧИКОВ ДЛЯ ФАЙЛОВ
+    // =========================================================
+    function attachFileHandlers() {
+        // Удаление файла
+        document.querySelectorAll('.delete-file').forEach(function(btn) {
+            btn.removeEventListener('click', handleDeleteFile);
+            btn.addEventListener('click', handleDeleteFile);
+        });
+        
+        // Замена файла
+        document.querySelectorAll('.replace-file').forEach(function(btn) {
+            btn.removeEventListener('click', handleReplaceFile);
+            btn.addEventListener('click', handleReplaceFile);
+        });
+    }
+
+    // =========================================================
+    // 9. ИНИЦИАЛИЗАЦИЯ ОБРАБОТЧИКОВ ФАЙЛОВ
+    // =========================================================
+    attachFileHandlers();
+
+    // =========================================================
+    // 10. ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
     // =========================================================
     
     function getCookie(name) {

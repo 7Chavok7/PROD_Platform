@@ -16,6 +16,13 @@ urlpatterns = [
     path('<int:pk>/upload/', views.order_upload_files, name='order_upload_files'),
     path('<int:pk>/start/', views.order_start, name='order_start'),
     
+     # Файлы заказа
+    path('<int:order_pk>/stage/<int:stage_pk>/drawing/create/', views.drawing_create, name='drawing_create'),
+    path('<int:order_pk>/stage/<int:stage_pk>/drawing/<int:pk>/delete/', views.drawing_delete, name='drawing_delete'),
+    path('<int:order_pk>/stage/<int:stage_pk>/drawing/upload/', views.stage_upload_drawing, name='stage_upload_drawing'),
+    path('<int:order_pk>/stage/<int:stage_pk>/drawing/<int:pk>/replace/', views.drawing_replace, name='drawing_replace'),
+    path('<int:order_pk>/stage/<int:stage_pk>/drawing/<int:pk>/delete-ajax/', views.drawing_delete_ajax, name='drawing_delete_ajax'),
+    
     # Этапы
     path('<int:order_pk>/stage/create/', views.stage_create, name='stage_create'),
     path('<int:order_pk>/stage/<int:pk>/', views.stage_detail, name='stage_detail'),
