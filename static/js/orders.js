@@ -256,7 +256,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         if (!confirm('Удалить этот файл?')) return;
         
-        // ✅ ПРАВИЛЬНЫЙ URL
+        // ПРАВИЛЬНЫЙ URL
         fetch(`/orders/${orderPk}/file/${fileId}/delete/`, {
             method: 'POST',
             headers: {
