@@ -220,15 +220,23 @@ class SkillForm(forms.ModelForm):
         model = Skill
         fields = [
             'name', 
+            'code',
             'category'
         ]
         widgets = {
             'name': forms.TextInput(
-                attrs={'class': 'form-control'}
-            ),
+                attrs={
+                    'class': 'form-control'
+                }),
+            'code': forms.TextInput(
+                attrs={
+                    'class': 'form-control', 
+                    'placeholder': 'Например: Фрез, Ток, Свар'
+                }),
             'category': forms.TextInput(
-                attrs={'class': 'form-control'}
-            ),
+                attrs={
+                    'class': 'form-control'
+                }),
         }
         
         

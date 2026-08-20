@@ -115,6 +115,9 @@
             <div class="card-body" id="skillsContainer">
                 {% for skill in employee.employeeskill_set.all %}
                     <span class="badge bg-primary me-1 mb-1 px-3 py-2 skill-tag" data-skill-id="{{ skill.skill.pk }}">
+                        <span class="badge bg-light text-dark me-1" style="font-size: 0.6rem;">
+                            {{ skill.skill.code|default:skill.skill.name|truncatechars:4 }}
+                        </span>
                         {{ skill.skill.name }}
                         <span class="badge bg-light text-dark ms-1">ур. {{ skill.level }}</span>
                         <span class="remove-skill ms-2" title="Удалить навык">✕</span>
