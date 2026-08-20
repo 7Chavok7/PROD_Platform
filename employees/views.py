@@ -306,16 +306,35 @@ def department_edit(request, pk):
 @login_required
 @user_passes_test(is_manager)
 def department_delete(request, pk):
+    """Удаление участка с проверкой связей"""
     dept = get_object_or_404(Department, pk=pk)
+    
+    # Проверяем связанные объекты
+    related_stages = dept.stages.all()
+    related_employees = dept.employees.all()
+    
     if request.method == 'POST':
+        # Если есть связанные объекты - показываем ошибку
+        if related_stages.exists() or related_employees.exists():
+            messages.error(
+                request, 
+                f'Невозможно удалить участок "{dept.name}". '
+                f'Он используется в {related_stages.count()} этапах и {related_employees.count()} сотрудниках.'
+            )
+            return redirect('employees:department_list')
+        
+        # Если связей нет - удаляем
         dept.delete()
-        messages.success(request, 'Участок успешно удалён!')
+        messages.success(request, f'Участок "{dept.name}" успешно удалён!')
         return redirect('employees:department_list')
-
+    
     context = {
         'department': dept,
+        'related_stages': related_stages,
+        'related_employees': related_employees,
+        'has_relations': related_stages.exists() or related_employees.exists(),
         'active_menu': 'departments',
-        'title': 'Удаление участка',
+        'title': f'Удаление участка: {dept.name}',
     }
     return render(request, 'employees/department_confirm_delete.html', context)
 
@@ -380,16 +399,33 @@ def skill_edit(request, pk):
 @login_required
 @user_passes_test(is_manager)
 def skill_delete(request, pk):
+    """Удаление навыка с проверкой связей"""
     skill = get_object_or_404(Skill, pk=pk)
+    
+    # Проверяем связанные объекты
+    related_stages = skill.stages.all()
+    related_employees = skill.employees.all()
+    
     if request.method == 'POST':
+        if related_stages.exists() or related_employees.exists():
+            messages.error(
+                request, 
+                f'Невозможно удалить навык "{skill.name}". '
+                f'Он используется в {related_stages.count()} этапах и {related_employees.count()} сотрудниках.'
+            )
+            return redirect('employees:skill_list')
+        
         skill.delete()
-        messages.success(request, 'Навык успешно удалён!')
+        messages.success(request, f'Навык "{skill.name}" успешно удалён!')
         return redirect('employees:skill_list')
-
+    
     context = {
         'skill': skill,
+        'related_stages': related_stages,
+        'related_employees': related_employees,
+        'has_relations': related_stages.exists() or related_employees.exists(),
         'active_menu': 'skills',
-        'title': 'Удаление навыка',
+        'title': f'Удаление навыка: {skill.name}',
     }
     return render(request, 'employees/skill_confirm_delete.html', context)
 
@@ -457,17 +493,31 @@ def position_edit(request, pk):
 @login_required
 @user_passes_test(is_manager)
 def position_delete(request, pk):
-    """Удаление должности"""
+    """Удаление должности с проверкой связей"""
     position = get_object_or_404(Position, pk=pk)
+    
+    # Проверяем связанные объекты
+    related_employees = position.employees.all()
+    
     if request.method == 'POST':
+        if related_employees.exists():
+            messages.error(
+                request, 
+                f'Невозможно удалить должность "{position.name}". '
+                f'Она используется {related_employees.count()} сотрудниками.'
+            )
+            return redirect('employees:position_list')
+        
         position.delete()
-        messages.success(request, 'Должность успешно удалена!')
+        messages.success(request, f'Должность "{position.name}" успешно удалена!')
         return redirect('employees:position_list')
-
+    
     context = {
         'position': position,
+        'related_employees': related_employees,
+        'has_relations': related_employees.exists(),
         'active_menu': 'positions',
-        'title': 'Удаление должности',
+        'title': f'Удаление должности: {position.name}',
     }
     return render(request, 'employees/position_confirm_delete.html', context)
 

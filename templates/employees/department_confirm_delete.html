@@ -9,6 +9,92 @@
 {% endblock %}
 
 {% block content %}
+
+<!-- ============================================================ -->
+<!-- ЕСЛИ ЕСТЬ СВЯЗАННЫЕ ОБЪЕКТЫ - ПОКАЗЫВАЕМ ОШИБКУ             -->
+<!-- ============================================================ -->
+{% if has_relations %}
+<div class="card border-danger">
+    <div class="card-header bg-danger text-white">
+        <h4 class="mb-0"><i class="fas fa-exclamation-circle me-2"></i>Невозможно удалить участок</h4>
+    </div>
+    <div class="card-body">
+        <p class="fs-5 text-danger">
+            <i class="fas fa-exclamation-triangle me-2"></i>
+            Участок <strong>{{ department.name }}</strong> используется в системе!
+        </p>
+        <p class="text-muted">
+            Перед удалением участка необходимо переназначить или удалить все связанные объекты.
+        </p>
+
+        <div class="row mt-4">
+            <!-- Связанные этапы -->
+            {% if related_stages %}
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header bg-warning">
+                        <i class="fas fa-tasks me-2"></i>Этапы ({{ related_stages.count }})
+                    </div>
+                    <div class="card-body">
+                        <ul class="list-unstyled mb-0">
+                            {% for stage in related_stages|slice:":10" %}
+                            <li class="py-1 border-bottom">
+                                <a href="{% url 'orders:stage_detail' stage.order.pk stage.pk %}" target="_blank">
+                                    {{ stage.order.number }} — {{ stage.name }}
+                                </a>
+                            </li>
+                            {% endfor %}
+                            {% if related_stages.count > 10 %}
+                            <li class="py-1 text-muted small">
+                                ... и еще {{ related_stages.count|add:"-10" }} этапов
+                            </li>
+                            {% endif %}
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Связанные сотрудники -->
+            {% if related_employees %}
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header bg-warning">
+                        <i class="fas fa-users me-2"></i>Сотрудники ({{ related_employees.count }})
+                    </div>
+                    <div class="card-body">
+                        <ul class="list-unstyled mb-0">
+                            {% for employee in related_employees|slice:":10" %}
+                            <li class="py-1 border-bottom">
+                                <a href="{% url 'employees:employee_detail' employee.pk %}" target="_blank">
+                                    {{ employee.full_name }}
+                                </a>
+                            </li>
+                            {% endfor %}
+                            {% if related_employees.count > 10 %}
+                            <li class="py-1 text-muted small">
+                                ... и еще {{ related_employees.count|add:"-10" }} сотрудников
+                            </li>
+                            {% endif %}
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="mt-4">
+            <a href="{% url 'employees:department_list' %}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left me-2"></i>Вернуться к списку
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- ЕСЛИ НЕТ СВЯЗЕЙ - ПОКАЗЫВАЕМ ПОДТВЕРЖДЕНИЕ                   -->
+<!-- ============================================================ -->
+{% else %}
 <div class="card border-danger">
     <div class="card-header bg-danger text-white">
         <h4 class="mb-0"><i class="fas fa-exclamation-triangle me-2"></i>{{ title }}</h4>
@@ -19,14 +105,6 @@
         </p>
         <p class="text-muted">
             Это действие <strong>необратимо</strong>. Все данные участка будут удалены.
-            {% if department.employees.count > 0 %}
-                <br>
-                <span class="text-danger">
-                    <i class="fas fa-exclamation-circle me-1"></i>
-                    Внимание! К этому участку привязано {{ department.employees.count }} сотрудников.
-                    Перед удалением переназначьте их на другой участок.
-                </span>
-            {% endif %}
         </p>
 
         <div class="card bg-light mt-3">
@@ -39,10 +117,6 @@
                     <tr>
                         <th>Руководитель</th>
                         <td>{{ department.head|default:'—' }}</td>
-                    </tr>
-                    <tr>
-                        <th>Количество сотрудников</th>
-                        <td>{{ department.employees.count }}</td>
                     </tr>
                     {% if department.comment %}
                     <tr>
@@ -57,7 +131,7 @@
         <form method="post" class="mt-4">
             {% csrf_token %}
             <button type="submit" class="btn btn-danger">
-                <i class="fas fa-trash me-2"></i>Удалить участок
+                <i class="fas fa-trash me-2"></i>Да, удалить участок
             </button>
             <a href="{% url 'employees:department_list' %}" class="btn btn-secondary">
                 <i class="fas fa-times me-2"></i>Отмена
@@ -65,4 +139,6 @@
         </form>
     </div>
 </div>
+{% endif %}
+
 {% endblock %}
