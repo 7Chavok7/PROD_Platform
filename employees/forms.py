@@ -43,7 +43,8 @@ class EmployeeForm(forms.ModelForm):
         ]
         widgets = {
             'hire_date': forms.DateInput(
-                attrs={'type': 'date', 'class': 'form-control'}
+                attrs={'type': 'date', 'class': 'form-control'},
+                        format='%Y-%m-%d'
             ),
             'last_name': forms.TextInput(
                 attrs={'class': 'form-control'}
@@ -80,6 +81,11 @@ class EmployeeForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['user'].required = False
+        
+        # Если редактируем сотрудника - подставляем дату приема
+        if self.instance and self.instance.pk:
+            if self.instance.hire_date:
+                self.initial['hire_date'] = self.instance.hire_date.strftime('%Y-%m-%d')
         
         if self.instance and self.instance.pk and self.instance.user:
             self.fields['username'].initial = self.instance.user.username
