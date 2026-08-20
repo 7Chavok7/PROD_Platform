@@ -457,9 +457,9 @@
                     <span class="badge bg-primary ms-2">{{ active_orders|length }}</span>
                 </div>
                 <div class="btn-group btn-group-sm" role="group">
-                    <button type="button" class="btn btn-outline-secondary active" data-view="Week">Неделя</button>
+                    <button type="button" class="btn btn-outline-secondary active" data-view="Day">День</button>
+                    <button type="button" class="btn btn-outline-secondary" data-view="Week">Неделя</button>
                     <button type="button" class="btn btn-outline-secondary" data-view="Month">Месяц</button>
-                    <button type="button" class="btn btn-outline-secondary" data-view="Quarter">Квартал</button>
                 </div>
             </div>
             <div class="card-body">
@@ -623,27 +623,35 @@ document.addEventListener('DOMContentLoaded', function() {
         if (dashboardGanttData && dashboardGanttData.length > 0) {
             const dashboardGantt = new Gantt('#dashboardGantt', dashboardGanttData, {
                 on_click: function(task) {
-                    // Извлекаем ID заказа из task.id
                     const match = task.id.match(/order-(\d+)-stage/);
                     if (match) {
                         window.location.href = `/orders/${match[1]}/`;
                     }
                 },
-                view_mode: 'Week',
+                view_mode: 'Day',
                 language: 'ru'
             });
 
             // Переключение режимов
-            document.querySelectorAll('#dashboardGanttContainer [data-view]').forEach(function(btn) {
+            document.querySelectorAll('#dashboardGanttContainer [data-view], .widget-card .btn-group [data-view]').forEach(function(btn) {
                 btn.addEventListener('click', function() {
                     const view = this.dataset.view;
-                    this.closest('.btn-group').querySelectorAll('.btn').forEach(function(b) {
-                        b.classList.remove('active');
-                    });
+                    const group = this.closest('.btn-group');
+                    if (group) {
+                        group.querySelectorAll('.btn').forEach(function(b) {
+                            b.classList.remove('active');
+                        });
+                    }
                     this.classList.add('active');
                     dashboardGantt.change_view_mode(view);
                 });
             });
+            
+            // Устанавливаем активную кнопку "День"
+            const dayBtn = document.querySelector('#dashboardGanttContainer [data-view="Day"], .widget-card .btn-group [data-view="Day"]');
+            if (dayBtn) {
+                dayBtn.classList.add('active');
+            }
         }
     {% endif %}
 });

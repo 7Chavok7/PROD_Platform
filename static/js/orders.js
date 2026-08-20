@@ -139,7 +139,6 @@ document.addEventListener('DOMContentLoaded', function() {
         })
         .then(data => {
             if (data.success) {
-                // ✅ ИСПРАВЛЕНО: ищем правильный контейнер для файлов
                 // Ищем карточку с файлами (правую колонку)
                 const filesContainer = document.querySelector('.card-body:has(.fa-paperclip)') || 
                                       document.querySelector('.card .card-body');

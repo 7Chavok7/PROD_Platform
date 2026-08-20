@@ -344,7 +344,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const ganttData = {{ gantt_data|safe }};
     
     if (ganttData && ganttData.length > 0) {
-        // Добавляем русские названия дней
         const gantt = new Gantt('#ganttChart', ganttData, {
             on_click: function(task) {
                 console.log('Task clicked:', task);
@@ -358,7 +357,7 @@ document.addEventListener('DOMContentLoaded', function() {
             on_view_change: function(mode) {
                 console.log('View changed:', mode);
             },
-            view_mode: 'Week',
+            view_mode: 'Day',
             language: 'ru'
         });
 
@@ -366,12 +365,13 @@ document.addEventListener('DOMContentLoaded', function() {
         document.querySelectorAll('[data-view]').forEach(function(btn) {
             btn.addEventListener('click', function() {
                 const view = this.dataset.view;
-                // Обновляем активную кнопку
-                this.closest('.btn-group').querySelectorAll('.btn').forEach(function(b) {
-                    b.classList.remove('active');
-                });
+                const group = this.closest('.btn-group');
+                if (group) {
+                    group.querySelectorAll('.btn').forEach(function(b) {
+                        b.classList.remove('active');
+                    });
+                }
                 this.classList.add('active');
-                // Меняем режим
                 gantt.change_view_mode(view);
             });
         });

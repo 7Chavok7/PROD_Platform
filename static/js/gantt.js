@@ -12,7 +12,7 @@ class GanttChart {
             on_date_change: options.on_date_change || null,
             on_progress_change: options.on_progress_change || null,
             on_view_change: options.on_view_change || null,
-            view_mode: options.view_mode || 'Week',
+            view_mode: options.view_mode || 'Day',  // ✅ по умолчанию День
             language: 'ru',
             ...options
         };
@@ -38,7 +38,6 @@ class GanttChart {
             return;
         }
 
-        // Фильтруем задачи с датами
         const validTasks = this.tasks.filter(task => task.start && task.end);
         
         if (validTasks.length === 0) {
