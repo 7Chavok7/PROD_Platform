@@ -588,3 +588,210 @@ body {
     background-color: rgba(13, 110, 253, 0.05);
     cursor: pointer;
 }
+
+/* =========================================================
+   МАТРИЦА КВАЛИФИКАЦИЙ
+   ========================================================= */
+.matrix-table {
+    font-size: 0.85rem;
+}
+
+.matrix-table thead th {
+    vertical-align: bottom;
+    text-align: center;
+    padding: 8px 6px;
+    font-weight: 600;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    background: #f8f9fa;
+    border-bottom: 2px solid #dee2e6;
+    min-width: 60px;
+    max-width: 100px;
+    word-break: break-word;
+    hyphens: auto;
+}
+
+.matrix-table thead th .skill-name {
+    display: block;
+    font-weight: 600;
+    font-size: 0.75rem;
+    line-height: 1.2;
+    word-break: break-word;
+    hyphens: auto;
+    max-width: 80px;
+}
+
+.matrix-table thead th .skill-name.long {
+    writing-mode: vertical-rl;
+    text-orientation: mixed;
+    letter-spacing: 1px;
+    padding: 4px 0;
+    font-size: 0.7rem;
+}
+
+.matrix-table thead th .skill-category {
+    display: block;
+    font-weight: 400;
+    font-size: 0.6rem;
+    color: #6c757d;
+    margin-top: 2px;
+    word-break: break-word;
+    hyphens: auto;
+}
+
+.matrix-table tbody td {
+    vertical-align: middle;
+    padding: 6px 8px;
+    text-align: center;
+    font-size: 0.85rem;
+    border-bottom: 1px solid #f1f3f5;
+}
+
+.matrix-table tbody td:first-child {
+    text-align: left;
+    font-weight: 500;
+    position: sticky;
+    left: 0;
+    background: #fff;
+    z-index: 1;
+    border-right: 2px solid #dee2e6;
+    min-width: 180px;
+    max-width: 220px;
+}
+
+.matrix-table tbody td:first-child .employee-name {
+    display: block;
+    font-weight: 600;
+    font-size: 0.85rem;
+    word-break: break-word;
+    hyphens: auto;
+}
+
+.matrix-table tbody td:first-child .employee-status {
+    display: inline-block;
+    font-size: 0.6rem;
+    padding: 1px 8px;
+    border-radius: 10px;
+    font-weight: 500;
+    margin-top: 2px;
+}
+
+.matrix-table tbody td:nth-child(2) {
+    text-align: left;
+    font-size: 0.75rem;
+    color: #495057;
+    min-width: 100px;
+    max-width: 150px;
+    word-break: break-word;
+    hyphens: auto;
+}
+
+.matrix-table tbody td.skill-cell {
+    min-width: 50px;
+    max-width: 70px;
+    padding: 4px 2px;
+}
+
+.matrix-table tbody td.skill-cell .badge-skill {
+    display: inline-block;
+    min-width: 28px;
+    padding: 4px 6px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    border-radius: 4px;
+    text-align: center;
+}
+
+.matrix-table tbody td.skill-cell .badge-skill.level-5 {
+    background: #198754;
+    color: #fff;
+}
+
+.matrix-table tbody td.skill-cell .badge-skill.level-4 {
+    background: #0d6efd;
+    color: #fff;
+}
+
+.matrix-table tbody td.skill-cell .badge-skill.level-3 {
+    background: #ffc107;
+    color: #212529;
+}
+
+.matrix-table tbody td.skill-cell .badge-skill.level-2 {
+    background: #fd7e14;
+    color: #fff;
+}
+
+.matrix-table tbody td.skill-cell .badge-skill.level-1 {
+    background: #6c757d;
+    color: #fff;
+}
+
+.matrix-table tbody td.skill-cell .badge-skill.empty {
+    color: #adb5bd;
+    font-size: 0.7rem;
+}
+
+.matrix-filters .form-control,
+.matrix-filters .form-select {
+    font-size: 0.85rem;
+}
+
+/* =========================================================
+   АДАПТИВНОСТЬ ДЛЯ МАТРИЦЫ
+   ========================================================= */
+@media (max-width: 768px) {
+    .matrix-table {
+        font-size: 0.75rem;
+    }
+
+    .matrix-table thead th {
+        min-width: 40px;
+        padding: 4px 2px;
+        font-size: 0.6rem;
+    }
+
+    .matrix-table thead th .skill-name {
+        font-size: 0.6rem;
+        max-width: 50px;
+    }
+
+    .matrix-table thead th .skill-name.long {
+        writing-mode: horizontal-tb;
+        font-size: 0.6rem;
+    }
+
+    .matrix-table tbody td {
+        padding: 4px 4px;
+        font-size: 0.75rem;
+    }
+
+    .matrix-table tbody td:first-child {
+        min-width: 120px;
+        max-width: 150px;
+    }
+
+    .matrix-table tbody td:first-child .employee-name {
+        font-size: 0.75rem;
+    }
+
+    .matrix-table tbody td.skill-cell {
+        min-width: 35px;
+        max-width: 45px;
+        padding: 2px 1px;
+    }
+
+    .matrix-table tbody td.skill-cell .badge-skill {
+        min-width: 22px;
+        padding: 2px 4px;
+        font-size: 0.7rem;
+    }
+}
+
+@media (max-width: 576px) {
+    .matrix-table thead th .skill-name.long {
+        writing-mode: vertical-rl;
+        font-size: 0.55rem;
+    }
+}
