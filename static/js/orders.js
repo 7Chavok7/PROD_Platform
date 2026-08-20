@@ -1,187 +1,396 @@
-/* static/js/main.js | A.Grachev */
-// =========================================================
-//   ОСНОВНАЯ ЛОГИКА (ГЛОБАЛЬНЫЕ ФУНКЦИИ)
-// =========================================================
-
+/* static/js/orders.js | A.Grachev */
+// Заказы — интерактивность
 document.addEventListener('DOMContentLoaded', function() {
     'use strict';
 
     // =========================================================
-    // 1. ТОГГЛ САЙДБАРА (МОБИЛЬНАЯ ВЕРСИЯ)
+    // 1. ПЕРЕКЛЮЧЕНИЕ СТАТУСА ЗАКАЗА (с подтверждением)
     // =========================================================
-    const sidebarToggle = document.getElementById('sidebarToggle');
-    const sidebar = document.querySelector('.sidebar');
-    const backdrop = document.createElement('div');
-    backdrop.className = 'sidebar-backdrop';
-    document.body.appendChild(backdrop);
-
-    function toggleSidebar() {
-        sidebar.classList.toggle('show');
-        backdrop.classList.toggle('show');
-        document.body.style.overflow = sidebar.classList.contains('show') ? 'hidden' : '';
-    }
-
-    if (sidebarToggle) {
-        sidebarToggle.addEventListener('click', toggleSidebar);
-    }
-
-    backdrop.addEventListener('click', toggleSidebar);
-
-    // Закрываем сайдбар при клике вне его
-    document.addEventListener('click', function(e) {
-        if (window.innerWidth <= 768) {
-            const isClickInside = sidebar.contains(e.target) || sidebarToggle?.contains(e.target);
-            if (!isClickInside && sidebar.classList.contains('show')) {
-                toggleSidebar();
+    const statusChangeForms = document.querySelectorAll('.order-status-form');
+    statusChangeForms.forEach(function(form) {
+        form.addEventListener('submit', function(e) {
+            const newStatus = this.querySelector('select[name="status"]');
+            if (newStatus) {
+                const confirmMsg = `Вы уверены, что хотите изменить статус заказа на "${newStatus.options[newStatus.selectedIndex].text}"?`;
+                if (!confirm(confirmMsg)) {
+                    e.preventDefault();
+                }
             }
-        }
+        });
     });
 
     // =========================================================
-    // 2. АВТОМАТИЧЕСКОЕ СКРЫТИЕ ALERT-СООБЩЕНИЙ
+    // 2. ПОДТВЕРЖДЕНИЕ УДАЛЕНИЯ ЭТАПА
     // =========================================================
-    const alerts = document.querySelectorAll('.alert:not(.alert-permanent)');
-    alerts.forEach(function(alert) {
-        setTimeout(function() {
-            const closeBtn = alert.querySelector('.btn-close');
-            if (closeBtn) {
-                closeBtn.click();
-            } else {
-                alert.style.transition = 'opacity 0.5s';
-                alert.style.opacity = '0';
-                setTimeout(function() {
-                    alert.remove();
-                }, 500);
-            }
-        }, 5000);
-    });
-
-    // =========================================================
-    // 3. ПОДТВЕРЖДЕНИЕ УДАЛЕНИЯ
-    // =========================================================
-    const deleteButtons = document.querySelectorAll('.confirm-delete');
-    deleteButtons.forEach(function(btn) {
+    const deleteStageBtns = document.querySelectorAll('.delete-stage');
+    deleteStageBtns.forEach(function(btn) {
         btn.addEventListener('click', function(e) {
-            const message = this.dataset.message || 'Вы уверены, что хотите удалить этот объект?';
-            if (!confirm(message)) {
+            if (!confirm('Вы уверены, что хотите удалить этот этап?')) {
                 e.preventDefault();
             }
         });
     });
 
     // =========================================================
-    // 4. АКТИВНОЕ СОСТОЯНИЕ МЕНЮ (ПОДСВЕТКА)
+    // 3. УДАЛЕНИЕ ЗАКАЗА (с AJAX и улучшенной обработкой)
     // =========================================================
-    const currentPath = window.location.pathname;
-    const navLinks = document.querySelectorAll('.sidebar .nav-link:not(.dropdown-toggle)');
-    navLinks.forEach(function(link) {
-        const href = link.getAttribute('href');
-        if (href && href !== '/') {
-            if (currentPath === href || currentPath.startsWith(href + '/')) {
-                link.classList.add('active');
+    const deleteOrderBtns = document.querySelectorAll('.delete-order');
+    deleteOrderBtns.forEach(function(btn) {
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            const orderPk = this.dataset.pk;
+            const orderNumber = this.dataset.number || 'заказ';
+            
+            if (confirm(`Вы уверены, что хотите удалить заказ ${orderNumber}?`)) {
+                const deleteUrl = `/orders/${orderPk}/delete/`;
+                
+                // ✅ Улучшенная обработка ошибок
+                fetch(deleteUrl, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || getCookie('csrftoken'),
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return response.text();
+                })
+                .then(() => {
+                    window.location.href = '/orders/';
+                })
+                .catch(error => {
+                    console.error('❌ Ошибка при удалении заказа:', error);
+                    showToast('Ошибка при удалении заказа. Попробуйте позже.', 'danger');
+                });
+            }
+        });
+    });
+
+    // =========================================================
+    // 4. ЗАГРУЗКА ФАЙЛОВ К ЗАКАЗУ (с улучшенной обратной связью)
+    // =========================================================
+    const uploadBtn = document.getElementById('uploadFileBtn');
+    if (uploadBtn) {
+        uploadBtn.addEventListener('click', function() {
+            const orderPk = this.dataset.orderPk;
+            
+            // Создаём скрытый input для выбора файла
+            const fileInput = document.createElement('input');
+            fileInput.type = 'file';
+            fileInput.multiple = true;
+            fileInput.accept = '.pdf,.jpg,.jpeg,.png,.dwg,.dxf,.zip,.doc,.docx,.xls,.xlsx';
+            
+            fileInput.addEventListener('change', function() {
+                const files = this.files;
+                if (files.length === 0) return;
+                
+                const formData = new FormData();
+                for (let i = 0; i < files.length; i++) {
+                    formData.append('files', files[i]);
+                }
+                formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]')?.value || getCookie('csrftoken'));
+                
+                // Показываем индикатор загрузки
+                const originalHtml = uploadBtn.innerHTML;
+                uploadBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Загрузка...';
+                uploadBtn.disabled = true;
+                
+                // ✅ Добавлен эндпоинт для загрузки
+                fetch(`/orders/${orderPk}/upload/`, {
+                    method: 'POST',
+                    body: formData,
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.success) {
+                        // Обновляем список файлов
+                        const filesContainer = document.querySelector('.card-body');
+                        const noMsg = document.getElementById('noFilesMessage');
+                        if (noMsg) noMsg.remove();
+                        
+                        // Добавляем новые файлы
+                        data.files.forEach(function(file) {
+                            const fileDiv = document.createElement('div');
+                            fileDiv.className = 'd-flex justify-content-between align-items-center mb-2';
+                            fileDiv.innerHTML = `
+                                <div>
+                                    <i class="fas fa-file me-1"></i>
+                                    <a href="${file.url}" target="_blank" class="text-decoration-none">${file.name}</a>
+                                    <br>
+                                    <small class="text-muted">${file.type}</small>
+                                </div>
+                                <span class="text-muted small">v${file.version}</span>
+                            `;
+                            // Вставляем перед кнопкой (если есть)
+                            const uploadBtnContainer = filesContainer.querySelector('.btn');
+                            if (uploadBtnContainer) {
+                                filesContainer.insertBefore(fileDiv, uploadBtnContainer);
+                            } else {
+                                filesContainer.appendChild(fileDiv);
+                            }
+                        });
+                        
+                        showToast('Файлы успешно загружены!', 'success');
+                    } else {
+                        showToast('Ошибка загрузки: ' + (data.error || 'Неизвестная ошибка'), 'danger');
+                    }
+                })
+                .catch(error => {
+                    console.error('❌ Ошибка загрузки файлов:', error);
+                    showToast('Ошибка загрузки файлов. Попробуйте позже.', 'danger');
+                })
+                .finally(() => {
+                    uploadBtn.innerHTML = originalHtml;
+                    uploadBtn.disabled = false;
+                });
+            });
+            
+            fileInput.click();
+        });
+    }
+
+    // =========================================================
+    // 5. ЗАПУСК ЗАКАЗА (заглушка - TODO)
+    // =========================================================
+    const startOrderBtns = document.querySelectorAll('.start-order');
+    startOrderBtns.forEach(function(btn) {
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            const orderPk = this.dataset.pk;
+            const orderNumber = this.dataset.number || 'заказ';
+            
+            // TODO: реализовать логику запуска заказа
+            // Пока просто показываем уведомление
+            showToast(`Функция "Запустить заказ ${orderNumber}" будет реализована в следующей версии.`, 'info');
+            
+            /* 
+            // ✅ ЗАКОММЕНТИРОВАННЫЙ КОД ДЛЯ БУДУЩЕЙ РЕАЛИЗАЦИИ
+            if (confirm(`Запустить заказ ${orderNumber}?`)) {
+                const originalHtml = this.innerHTML;
+                this.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Запуск...';
+                this.disabled = true;
+                
+                fetch(`/orders/${orderPk}/start/`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': getCookie('csrftoken'),
+                        'Content-Type': 'application/json',
+                    },
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.success) {
+                        showToast(`Заказ ${orderNumber} успешно запущен!`, 'success');
+                        setTimeout(() => window.location.reload(), 1500);
+                    } else {
+                        showToast(data.error || 'Ошибка при запуске заказа', 'danger');
+                        this.innerHTML = originalHtml;
+                        this.disabled = false;
+                    }
+                })
+                .catch(error => {
+                    console.error('❌ Ошибка при запуске заказа:', error);
+                    showToast('Ошибка при запуске заказа. Попробуйте позже.', 'danger');
+                    this.innerHTML = originalHtml;
+                    this.disabled = false;
+                });
+            }
+            */
+        });
+    });
+
+    // =========================================================
+    // 6. ПРОГРЕСС-БАР В КАРТОЧКЕ ЗАКАЗА (автообновление)
+    // =========================================================
+    const progressBars = document.querySelectorAll('.order-progress');
+    progressBars.forEach(function(bar) {
+        const orderPk = bar.dataset.orderPk;
+        // ✅ Можно добавить периодическое обновление
+        // setInterval(() => updateProgress(orderPk), 30000);
+    });
+
+    // =========================================================
+    // 7. ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
+    // =========================================================
+    
+    // Получение CSRF-токена из куки
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
             }
         }
-        if (href === '/' && currentPath === '/') {
-            link.classList.add('active');
+        return cookieValue;
+    }
+
+    // Создание и показ уведомления (toast) - улучшенная версия
+    function showToast(message, type = 'info', duration = 3000) {
+        // Удаляем старые уведомления
+        document.querySelectorAll('.custom-toast').forEach(el => el.remove());
+        
+        const types = {
+            success: 'check-circle',
+            danger: 'exclamation-circle',
+            warning: 'exclamation-triangle',
+            info: 'info-circle'
+        };
+        
+        const toast = document.createElement('div');
+        toast.className = `custom-toast alert alert-${type} alert-dismissible fade show position-fixed`;
+        toast.style.cssText = `
+            top: 80px;
+            right: 20px;
+            z-index: 9999;
+            max-width: 400px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            animation: slideInRight 0.3s ease;
+        `;
+        toast.innerHTML = `
+            <i class="fas fa-${types[type] || 'info-circle'} me-2"></i>
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        
+        // Добавляем анимацию через CSS
+        if (!document.getElementById('toastStyles')) {
+            const style = document.createElement('style');
+            style.id = 'toastStyles';
+            style.textContent = `
+                @keyframes slideInRight {
+                    from { transform: translateX(100%); opacity: 0; }
+                    to { transform: translateX(0); opacity: 1; }
+                }
+            `;
+            document.head.appendChild(style);
+        }
+        
+        document.body.appendChild(toast);
+        
+        // Автоматическое закрытие
+        if (duration > 0) {
+            setTimeout(() => {
+                const closeBtn = toast.querySelector('.btn-close');
+                if (closeBtn) closeBtn.click();
+            }, duration);
+        }
+        
+        return toast;
+    }
+
+    // Функция обновления прогресса (для будущего использования)
+    function updateProgress(orderPk) {
+        fetch(`/orders/${orderPk}/progress/`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const progressBar = document.querySelector(`.order-progress[data-order-pk="${orderPk}"]`);
+                    if (progressBar) {
+                        progressBar.style.width = data.progress + '%';
+                        progressBar.textContent = data.progress + '%';
+                    }
+                }
+            })
+            .catch(error => console.error('Ошибка обновления прогресса:', error));
+    }
+
+    // =========================================================
+    // 8. АВТОМАТИЧЕСКИЙ ПОДСЧЁТ ПЛАНОВЫХ ЧАСОВ (отображение)
+    // =========================================================
+    const totalPlannedHours = document.getElementById('totalPlannedHours');
+    if (totalPlannedHours) {
+        const hours = parseFloat(totalPlannedHours.dataset.total) || 0;
+        totalPlannedHours.textContent = hours.toFixed(1);
+    }
+
+    // =========================================================
+    // 9. МАСКА ДЛЯ ДАТ (установка минимальной даты = сегодня)
+    // =========================================================
+    const dateInputs = document.querySelectorAll('input[type="date"]');
+    dateInputs.forEach(function(input) {
+        if (!input.value) {
+            const today = new Date().toISOString().split('T')[0];
+            input.min = today;
         }
     });
 
     // =========================================================
-    // 5. ТУЛТИПЫ (Bootstrap)
+    // 10. ФИЛЬТР СТАТУСА (быстрое переключение)
     // =========================================================
-    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-    tooltipTriggerList.map(function(element) {
-        return new bootstrap.Tooltip(element);
-    });
-
-    // =========================================================
-    // 6. АНИМАЦИЯ ПРОГРЕСС-БАРОВ
-    // =========================================================
-    function animateProgressBars() {
-        document.querySelectorAll('.progress-mini .progress-bar').forEach(function(bar) {
-            const targetWidth = bar.style.width;
-            if (targetWidth && targetWidth !== '0%') {
-                bar.style.width = '0%';
-                setTimeout(() => {
-                    bar.style.width = targetWidth;
-                }, 100);
+    const statusFilter = document.getElementById('statusFilter');
+    if (statusFilter) {
+        statusFilter.addEventListener('change', function() {
+            const form = this.closest('form');
+            if (form) {
+                form.submit();
+            } else {
+                // Если формы нет, делаем редирект с параметром
+                const url = new URL(window.location.href);
+                url.searchParams.set('status', this.value);
+                window.location.href = url.toString();
             }
         });
     }
-    
-    animateProgressBars();
 
-    console.log('🚀 ProdPlatform загружен');
-});
-
-// =========================================================
-//   ГЛОБАЛЬНЫЕ УТИЛИТЫ
-// =========================================================
-
-// Получение CSRF-токена из куки
-function getCookie(name) {
-    let cookieValue = null;
-    if (document.cookie && document.cookie !== '') {
-        const cookies = document.cookie.split(';');
-        for (let i = 0; i < cookies.length; i++) {
-            const cookie = cookies[i].trim();
-            if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                break;
+    // =========================================================
+    // 11. КНОПКА "ПРИМЕНИТЬ ФИЛЬТР" (для order_list)
+    // =========================================================
+    const applyFilterBtn = document.getElementById('applyFilterBtn');
+    if (applyFilterBtn) {
+        applyFilterBtn.addEventListener('click', function() {
+            const searchInput = document.getElementById('filterSearch');
+            const statusSelect = document.getElementById('filterStatus');
+            const prioritySelect = document.getElementById('filterPriority');
+            
+            const params = new URLSearchParams();
+            if (searchInput && searchInput.value.trim()) {
+                params.append('search', searchInput.value.trim());
             }
-        }
+            if (statusSelect && statusSelect.value) {
+                params.append('status', statusSelect.value);
+            }
+            if (prioritySelect && prioritySelect.value) {
+                params.append('priority', prioritySelect.value);
+            }
+            
+            const url = new URL(window.location.href);
+            url.search = params.toString();
+            window.location.href = url.toString();
+        });
     }
-    return cookieValue;
-}
 
-// Создание уведомления (toast)
-function showToast(message, type = 'info', duration = 3000) {
-    document.querySelectorAll('.custom-toast').forEach(el => el.remove());
-    
-    const types = {
-        success: 'check-circle',
-        danger: 'exclamation-circle',
-        warning: 'exclamation-triangle',
-        info: 'info-circle'
-    };
-    
-    const toast = document.createElement('div');
-    toast.className = `custom-toast alert alert-${type} alert-dismissible fade show position-fixed`;
-    toast.style.cssText = `
-        top: 80px;
-        right: 20px;
-        z-index: 9999;
-        max-width: 400px;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-        animation: slideInRight 0.3s ease;
-    `;
-    toast.innerHTML = `
-        <i class="fas fa-${types[type] || 'info-circle'} me-2"></i>
-        ${message}
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-    `;
-    
-    document.body.appendChild(toast);
-    
-    if (duration > 0) {
-        setTimeout(() => {
-            const closeBtn = toast.querySelector('.btn-close');
-            if (closeBtn) closeBtn.click();
-        }, duration);
+    // =========================================================
+    // 12. КЛАВИША ENTER В ПОЛЕ ПОИСКА
+    // =========================================================
+    const searchInput = document.getElementById('filterSearch');
+    if (searchInput) {
+        searchInput.addEventListener('keyup', function(e) {
+            if (e.key === 'Enter') {
+                const applyBtn = document.getElementById('applyFilterBtn');
+                if (applyBtn) {
+                    applyBtn.click();
+                }
+            }
+        });
     }
-    
-    return toast;
-}
 
-// Дебаунс для поиска
-function debounce(func, wait) {
-    let timeout;
-    return function executedFunction(...args) {
-        const later = () => {
-            clearTimeout(timeout);
-            func(...args);
-        };
-        clearTimeout(timeout);
-        timeout = setTimeout(later, wait);
-    };
-}
+    console.log('📦 Заказы загружены');
+});

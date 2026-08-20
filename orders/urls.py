@@ -13,6 +13,7 @@ urlpatterns = [
     path('<int:pk>/edit/', views.order_edit, name='order_edit'),
     path('<int:pk>/delete/', views.order_delete, name='order_delete'),
     path('<int:pk>/restore/', views.order_restore, name='order_restore'), 
+    path('<int:pk>/upload/', views.order_upload_files, name='order_upload_files'),
     
     # Этапы
     path('<int:order_pk>/stage/create/', views.stage_create, name='stage_create'),

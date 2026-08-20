@@ -1,6 +1,7 @@
 import json
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required, user_passes_test
+from django.views.decorators.http import require_POST
 from django.contrib import messages
 from django.db.models import Q, Count, Sum, Avg
 from django.db import transaction
@@ -1030,6 +1031,42 @@ def order_edit(request, pk):
     }
     return render(request, 'orders/order_form.html', context)
 
+@login_required
+@user_passes_test(is_manager)
+@require_POST
+def order_upload_files(request, pk):
+    """Загрузка файлов к заказу (AJAX)"""
+    order = get_object_or_404(Order, pk=pk)
+    
+    # Проверяем права
+    if order.is_deleted:
+        if not (request.user.is_superuser or request.user.role in ['admin', 'director']):
+            return JsonResponse({'success': False, 'error': 'Заказ удален'})
+    
+    files = request.FILES.getlist('files')
+    if not files:
+        return JsonResponse({'success': False, 'error': 'Файлы не выбраны'})
+    
+    uploaded_files = []
+    for f in files:
+        file_obj = OrderFile.objects.create(
+            name=f.name,
+            file=f,
+            file_type=OrderFile.FileType.OTHER,
+            uploaded_by=request.user,
+        )
+        order.files.add(file_obj)
+        uploaded_files.append({
+            'name': file_obj.name,
+            'url': file_obj.file.url,
+            'type': file_obj.get_file_type_display(),
+            'version': 1
+        })
+    
+    return JsonResponse({
+        'success': True,
+        'files': uploaded_files
+    })
 
 @login_required
 @user_passes_test(is_manager)
