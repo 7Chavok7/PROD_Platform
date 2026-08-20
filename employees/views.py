@@ -529,7 +529,7 @@ def position_delete(request, pk):
 @user_passes_test(is_manager)
 def skill_matrix(request):
     """Матрица квалификаций: сотрудник х навыки"""
-    # ✅ ИСПРАВЛЕНО: исключаем суперпользователей
+    # Исключаем суперпользователей
     employees = Employee.objects.select_related('department').exclude(
         user__is_superuser=True
     ).all()
@@ -546,10 +546,20 @@ def skill_matrix(request):
             'employee': employee,
             'levels': skill_levels,
         })
+    
+    # Подготавливаем навыки с кодами для шаблона
+    skills_data = []
+    for skill in skills:
+        skills_data.append({
+            'id': skill.id,
+            'name': skill.name,
+            'code': skill.get_code(),
+            'category': skill.category,
+        })
         
     context = {
         'matrix': matrix,
-        'skills': skills,
+        'skills': skills_data,  # ✅ Передаем с кодами
         'departments': departments,
         'active_menu': 'skill_matrix',
         'title': 'Матрица квалификаций'

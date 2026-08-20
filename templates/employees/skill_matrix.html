@@ -47,7 +47,7 @@
                         {% for skill in skills %}
                         <th class="text-center" style="min-width: 50px; max-width: 70px; font-weight: 600; font-size: 0.8rem; vertical-align: middle;" 
                             title="{{ skill.name }}{% if skill.category %} ({{ skill.category }}){% endif %}">
-                            {{ skill.code|default:skill.name|truncatechars:6 }}
+                            {{ skill.code }}
                         </th>
                         {% empty %}
                         <th class="text-center text-muted">Нет навыков</th>
@@ -122,7 +122,7 @@
             <div class="col-lg-3 col-md-4 col-sm-6">
                 <div class="d-flex align-items-center p-2 border rounded bg-white">
                     <span class="badge bg-secondary me-2" style="min-width: 30px; font-size: 0.7rem;">
-                        {{ skill.code|default:skill.name|truncatechars:6 }}
+                        {{ skill.code }}
                     </span>
                     <span class="small">
                         {{ skill.name }}
@@ -186,18 +186,4 @@
 
 {% block extra_js %}
 <script src="{% static 'js/skill_matrix.js' %}"></script>
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Автоматическое обновление title для ячеек с навыками
-    document.querySelectorAll('.matrix-table thead th').forEach(function(th) {
-        const text = th.textContent.trim();
-        if (text && text.length > 0 && !th.querySelector('i')) {
-            const skillName = th.getAttribute('title');
-            if (skillName) {
-                th.setAttribute('data-full-name', skillName);
-            }
-        }
-    });
-});
-</script>
 {% endblock %}

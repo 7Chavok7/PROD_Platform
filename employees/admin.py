@@ -27,10 +27,12 @@ class DepartmentAdmin(SimpleHistoryAdmin):
 class SkillAdmin(SimpleHistoryAdmin):
     list_display = [
         'name',
+        'code',
         'category'
     ]
     search_fields = [
-        'name'
+        'name',
+        'code'
     ]
     
 

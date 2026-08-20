@@ -64,6 +64,12 @@ class Skill(models.Model):
         max_length=255,
         verbose_name='Название'
     )
+    code = models.CharField(
+        max_length=20,
+        blank=True,
+        verbose_name='Код навыка',
+        help_text='Короткое обозначение для матрицы (например: Фрез, Ток, Свар)'
+    )
     category = models.CharField(
         max_length=100,
         blank=True,
@@ -83,6 +89,10 @@ class Skill(models.Model):
         
     def __str__(self):
         return self.name
+    
+    def get_code(self):
+        """Возвращает код навыка или первые 6 букв названия"""
+        return self.code if self.code else self.name[:6]
     
     
 class Position(models.Model):
