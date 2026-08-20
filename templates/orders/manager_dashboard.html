@@ -443,6 +443,33 @@
     </div>
 </div>
 
+<!-- ============================================================ -->
+<!-- ГАНТ-ДИАГРАММА ВСЕХ АКТИВНЫХ ЗАКАЗОВ                        -->
+<!-- ============================================================ -->
+{% if mode == 'advanced' and gantt_data %}
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="widget-card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <div>
+                    <span class="header-icon"><i class="fas fa-chart-bar text-primary"></i></span>
+                    <span>Гант-диаграмма активных заказов</span>
+                    <span class="badge bg-primary ms-2">{{ active_orders|length }}</span>
+                </div>
+                <div class="btn-group btn-group-sm" role="group">
+                    <button type="button" class="btn btn-outline-secondary active" data-view="Week">Неделя</button>
+                    <button type="button" class="btn btn-outline-secondary" data-view="Month">Месяц</button>
+                    <button type="button" class="btn btn-outline-secondary" data-view="Quarter">Квартал</button>
+                </div>
+            </div>
+            <div class="card-body">
+                <div id="dashboardGantt" style="min-height: 400px; overflow-x: auto;"></div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
 <div class="row mt-4">
     {% if employee_load %}
     <div class="{% if department_load %}col-lg-6{% else %}col-12{% endif %}">
@@ -586,6 +613,40 @@
         const dailyLabels = [];
         const dailyValues = [];
     {% endif %}
+</script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Гант-диаграмма для дашборда
+    {% if mode == 'advanced' and gantt_data %}
+        const dashboardGanttData = {{ gantt_data|safe }};
+        
+        if (dashboardGanttData && dashboardGanttData.length > 0) {
+            const dashboardGantt = new Gantt('#dashboardGantt', dashboardGanttData, {
+                on_click: function(task) {
+                    // Извлекаем ID заказа из task.id
+                    const match = task.id.match(/order-(\d+)-stage/);
+                    if (match) {
+                        window.location.href = `/orders/${match[1]}/`;
+                    }
+                },
+                view_mode: 'Week',
+                language: 'ru'
+            });
+
+            // Переключение режимов
+            document.querySelectorAll('#dashboardGanttContainer [data-view]').forEach(function(btn) {
+                btn.addEventListener('click', function() {
+                    const view = this.dataset.view;
+                    this.closest('.btn-group').querySelectorAll('.btn').forEach(function(b) {
+                        b.classList.remove('active');
+                    });
+                    this.classList.add('active');
+                    dashboardGantt.change_view_mode(view);
+                });
+            });
+        }
+    {% endif %}
+});
 </script>
 <script src="{% static 'js/dashboard.js' %}"></script>
 {% endblock %}

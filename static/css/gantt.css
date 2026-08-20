@@ -1,0 +1,87 @@
+/* static/css/gantt.css | A.Grachev */
+/* =========================================================
+   СТИЛИ ДЛЯ ГАНТ-ДИАГРАММЫ
+   ========================================================= */
+
+/* Переопределение стилей Frappe Gantt */
+.gantt-container {
+    background: #fff;
+    border-radius: 8px;
+    padding: 0;
+}
+
+.gantt-container .gantt .bar {
+    border-radius: 4px;
+    opacity: 0.9;
+    transition: opacity 0.2s;
+}
+
+.gantt-container .gantt .bar:hover {
+    opacity: 1;
+}
+
+.gantt-container .gantt .bar-progress {
+    border-radius: 4px;
+}
+
+.gantt-container .gantt .bar-label {
+    font-size: 11px;
+    font-weight: 500;
+    fill: #fff;
+}
+
+.gantt-container .gantt .grid-header {
+    fill: #f8f9fa;
+}
+
+.gantt-container .gantt .grid-header text {
+    fill: #495057;
+    font-weight: 600;
+    font-size: 12px;
+}
+
+.gantt-container .gantt .today {
+    fill: rgba(13, 110, 253, 0.1);
+    stroke: #0d6efd;
+    stroke-width: 1.5;
+}
+
+/* Статусы этапов в Гант */
+.gantt-container .gantt .bar.pending {
+    fill: #6c757d;
+}
+
+.gantt-container .gantt .bar.assigned {
+    fill: #0d6efd;
+}
+
+.gantt-container .gantt .bar.in_progress {
+    fill: #0dcaf0;
+}
+
+.gantt-container .gantt .bar.completed {
+    fill: #198754;
+}
+
+.gantt-container .gantt .bar.defect {
+    fill: #dc3545;
+}
+
+.gantt-container .gantt .bar.problem {
+    fill: #ffc107;
+}
+
+.gantt-container .gantt .bar.on_hold {
+    fill: #fd7e14;
+}
+
+/* Адаптивность */
+@media (max-width: 768px) {
+    .gantt-container .gantt .bar-label {
+        font-size: 9px;
+    }
+
+    .gantt-container .gantt .grid-header text {
+        font-size: 10px;
+    }
+}

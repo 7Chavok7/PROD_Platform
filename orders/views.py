@@ -1,3 +1,4 @@
+import json
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib import messages
@@ -6,6 +7,7 @@ from django.db import transaction
 from django.utils import timezone
 from datetime import timedelta
 from django.apps import apps
+from django.http import JsonResponse
 from .models import (
     Order, 
     Stage, 
@@ -133,7 +135,29 @@ def manager_dashboard(request):
     # --- АКТИВНЫЕ ЗАКАЗЫ (для таблицы) ---
     active_orders = orders.filter(
         status__in=[Order.Status.IN_PROGRESS, Order.Status.DRAFT]
-    ).select_related('responsible_manager').prefetch_related('stages')[:20]
+    ).select_related('responsible_manager').prefetch_related('stages')
+    
+    gantt_data = []
+    for order in active_orders:
+        for stage in order.stages.all().order_by('number'):
+            status_colors = {
+                'pending': '#6c757d',
+                'assigned': '#0d6efd',
+                'in_progress': '#0dcaf0',
+                'completed': '#198754',
+                'defect': '#dc3545',
+                'problem': '#ffc107',
+                'on_hold': '#fd7e14',
+            }
+            gantt_data.append({
+                'id': f'order-{order.id}-stage-{stage.id}',
+                'name': f'{order.number}: {stage.name}',
+                'start': stage.planned_start_date.strftime('%Y-%m-%d') if stage.planned_start_date else None,
+                'end': stage.planned_finish_date.strftime('%Y-%m-%d') if stage.planned_finish_date else None,
+                'progress': 100 if stage.status == 'completed' else 0,
+                'custom_class': stage.status,
+                'color': status_colors.get(stage.status, '#6c757d'),
+            })
     
     # Добавляем прогресс для каждого заказа
     for order in active_orders:
@@ -251,6 +275,7 @@ def manager_dashboard(request):
         'overdue': overdue,
         'completion_rate': completion_rate,
         'active_orders': active_orders,
+        'gantt_data': json.dump(gantt_data),    # Передаем в JSON
         'status_data': status_data,
         'daily_labels': daily_labels,
         'daily_values': daily_values,
@@ -916,10 +941,35 @@ def order_detail(request, pk):
     progress = OrderProgressService.get_progress_percent(order)
     completed_count = OrderProgressService.get_completed_stages_count(order)
     
+    # Подготовка данных для Гант-диаграмм
+    gantt_data = []
+    for stage in order.stages.all().order_by('number'):
+        # Определяем цвет статуса для Гант
+        status_colors = {
+            'pending': '#6c757d',       # серый
+            'assigned': '#0d6efd',      # синий
+            'in_progress': '#0dca0d',   # голубой
+            'completed': '#198754',     # зеленый
+            'defect': '#dc3545',        # красный
+            'problem': '#ffc107',       # желтый
+            'on_hold': '#fd7e14',       # оранжевый
+        }
+        
+        gantt_data.append({
+            'id': str(stage.id),
+            'name': f'Этап {stage.number}: {stage.name}',
+            'start': stage.planned_start_date.strftime('%Y-%m-%d') if stage.planned_start_date else None,
+            'end': stage.planned_finish_date.strftime('%Y-%m-%d') if stage.planned_finish_date else None,
+            'progress': 100 if stage.status == 'completed' else 0,
+            'custom_class': stage.status,
+            'color': status_colors.get(stage.status, '#6c757d'),
+        })
+    
     context = {
         'order': order,
         'progress': progress,
         'completed_count': completed_count,
+        'gantt_data': json.dump(gantt_data),    # Передаем в JSON
         'active_menu': 'orders',
         'title': f'{order.number} — {order.name}',
         'is_admin': request.user.is_superuser or request.user.role in ['admin', 'director'],

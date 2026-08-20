@@ -265,6 +265,23 @@
         </div>
     </div>
 
+    <!-- ============================================================ -->
+    <!-- ГАНТ-ДИАГРАММА                                               -->
+    <!-- ============================================================ -->
+    <div class="card mt-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <span><i class="fas fa-chart-bar me-2"></i>План-график этапов (Гант)</span>
+            <div class="btn-group btn-group-sm" role="group">
+                <button type="button" class="btn btn-outline-secondary active" data-view="Day">День</button>
+                <button type="button" class="btn btn-outline-secondary" data-view="Week">Неделя</button>
+                <button type="button" class="btn btn-outline-secondary" data-view="Month">Месяц</button>
+            </div>
+        </div>
+        <div class="card-body">
+            <div id="ganttChart" style="min-height: 300px; overflow-x: auto;"></div>
+        </div>
+    </div>
+
     <!-- ПРАВАЯ КОЛОНКА: ФАЙЛЫ -->
     <div class="col-md-4">
         <div class="card">
@@ -321,4 +338,44 @@
 
 {% block extra_js %}
 <script src="{% static 'js/orders.js' %}"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Гант-диаграмма для заказа
+    const ganttData = {{ gantt_data|safe }};
+    
+    if (ganttData && ganttData.length > 0) {
+        // Добавляем русские названия дней
+        const gantt = new Gantt('#ganttChart', ganttData, {
+            on_click: function(task) {
+                console.log('Task clicked:', task);
+            },
+            on_date_change: function(task, start, end) {
+                console.log('Date changed:', task, start, end);
+            },
+            on_progress_change: function(task, progress) {
+                console.log('Progress changed:', task, progress);
+            },
+            on_view_change: function(mode) {
+                console.log('View changed:', mode);
+            },
+            view_mode: 'Week',
+            language: 'ru'
+        });
+
+        // Переключение режимов отображения
+        document.querySelectorAll('[data-view]').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                const view = this.dataset.view;
+                // Обновляем активную кнопку
+                this.closest('.btn-group').querySelectorAll('.btn').forEach(function(b) {
+                    b.classList.remove('active');
+                });
+                this.classList.add('active');
+                // Меняем режим
+                gantt.change_view_mode(view);
+            });
+        });
+    }
+});
+</script>
 {% endblock %}
