@@ -18,14 +18,13 @@
             {% csrf_token %}
 
             <!-- ============================================================ -->
-            <!-- БЛОК 1: ПОЛЬЗОВАТЕЛЬ (ГОРИЗОНТАЛЬНАЯ КАРТОЧКА)              -->
+            <!-- БЛОК 1: ПОЛЬЗОВАТЕЛЬ                                          -->
             <!-- ============================================================ -->
             <div class="row g-3 mb-4">
                 <div class="col-md-12">
                     <div class="card {% if employee and employee.user %}border-success bg-light{% else %}bg-light{% endif %}">
                         <div class="card-body">
                             <div class="row align-items-center">
-                                <!-- Иконка и статус -->
                                 <div class="col-md-3 col-lg-2">
                                     <div class="d-flex align-items-center">
                                         {% if employee and employee.user %}
@@ -44,7 +43,6 @@
                                     </div>
                                 </div>
 
-                                <!-- Информация -->
                                 <div class="col-md-5 col-lg-6">
                                     {% if employee and employee.user %}
                                         <p class="card-text text-muted small mb-0">
@@ -60,7 +58,6 @@
                                     {% endif %}
                                 </div>
 
-                                <!-- Поле выбора пользователя -->
                                 <div class="col-md-4 col-lg-4 mt-3 mt-md-0">
                                     {{ form.user }}
                                     {% if form.user.errors %}
@@ -69,7 +66,6 @@
                                 </div>
                             </div>
 
-                            <!-- Дополнительная информация для привязанного пользователя -->
                             {% if employee and employee.user %}
                                 <div class="row mt-2">
                                     <div class="col-md-12">
@@ -87,7 +83,7 @@
             </div>
 
             <!-- ============================================================ -->
-            <!-- БЛОК 2: СОЗДАНИЕ НОВОГО ПОЛЬЗОВАТЕЛЯ (ТОЛЬКО ЕСЛИ НЕТ ПОЛЬЗОВАТЕЛЯ) -->
+            <!-- БЛОК 2: СОЗДАНИЕ НОВОГО ПОЛЬЗОВАТЕЛЯ                         -->
             <!-- ============================================================ -->
             {% if not employee or not employee.user %}
             <div class="row g-3 mb-4">
@@ -99,7 +95,6 @@
                         <div class="card-body">
                             <p class="text-muted small">Заполните эти поля, если нужно создать нового пользователя</p>
                             
-                            <!-- Логин -->
                             <div class="row g-3 align-items-center mb-2">
                                 <div class="col-md-3">
                                     <label class="form-label fw-bold mb-0" for="{{ form.username.id_for_label }}">
@@ -115,7 +110,6 @@
                                 </div>
                             </div>
 
-                            <!-- Пароль -->
                             <div class="row g-3 align-items-center mb-2">
                                 <div class="col-md-3">
                                     <label class="form-label fw-bold mb-0" for="{{ form.password.id_for_label }}">
@@ -130,7 +124,6 @@
                                 </div>
                             </div>
 
-                            <!-- Подтверждение пароля -->
                             <div class="row g-3 align-items-center mb-2">
                                 <div class="col-md-3">
                                     <label class="form-label fw-bold mb-0" for="{{ form.password_confirm.id_for_label }}">
@@ -309,52 +302,6 @@
                                     {% endif %}
                                 </div>
                             </div>
-
-                            <!-- ============================================================ -->
-                            <!-- БЛОК: НАВЫКИ С УРОВНЕМ                                        -->
-                            <!-- ============================================================ -->
-                            <div class="row g-3 align-items-start mb-2">
-                                <div class="col-md-3">
-                                    <label class="form-label fw-bold mb-0">Навыки</label>
-                                </div>
-                                <div class="col-md-9">
-                                    <div id="skills-container">
-                                        {% for skill in employee.employeeskill_set.all %}
-                                        <div class="row g-2 mb-2 skill-row">
-                                            <div class="col-md-8">
-                                                <select name="skill_{{ forloop.counter0 }}_id" class="form-select form-select-sm">
-                                                    <option value="">---</option>
-                                                    {% for s in skills %}
-                                                    <option value="{{ s.pk }}" {% if s.pk == skill.skill.pk %}selected{% endif %}>
-                                                        {{ s.name }}
-                                                    </option>
-                                                    {% endfor %}
-                                                </select>
-                                            </div>
-                                            <div class="col-md-3">
-                                                <select name="skill_{{ forloop.counter0 }}_level" class="form-select form-select-sm">
-                                                    {% for i in "12345" %}
-                                                    <option value="{{ i }}" {% if i|add:0 == skill.level %}selected{% endif %}>
-                                                        {{ i }}
-                                                    </option>
-                                                    {% endfor %}
-                                                </select>
-                                            </div>
-                                            <div class="col-md-1">
-                                                <button type="button" class="btn btn-sm btn-outline-danger remove-skill">
-                                                    <i class="fas fa-times"></i>
-                                                </button>
-                                            </div>
-                                        </div>
-                                        {% empty %}
-                                        <p class="text-muted small">Навыки не добавлены</p>
-                                        {% endfor %}
-                                    </div>
-                                    <button type="button" class="btn btn-sm btn-outline-primary mt-2" id="add-skill-btn">
-                                        <i class="fas fa-plus me-1"></i>Добавить навык
-                                    </button>
-                                </div>
-                            </div>
                         </div>
                     </div>
                 </div>
@@ -385,376 +332,3 @@
     </div>
 </div>
 {% endblock %}
-
-{% comment %} {% extends 'base.html' %}
-{% load static %}
-
-{% block title %}{{ title }}{% endblock %}
-
-{% block breadcrumb_items %}
-<li class="breadcrumb-item"><a href="{% url 'employees:employee_list' %}">Сотрудники</a></li>
-<li class="breadcrumb-item active">{{ title }}</li>
-{% endblock %}
-
-{% block content %}
-<div class="card shadow-lg">
-    <div class="card-header bg-primary text-white">
-        <h4 class="mb-0"><i class="fas fa-user-plus me-2"></i>{{ title }}</h4>
-    </div>
-    <div class="card-body">
-        <form method="post">
-            {% csrf_token %}
-
-            <!-- ============================================================ -->
-            <!-- БЛОК 1: ВЫБОР СУЩЕСТВУЮЩЕГО ПОЛЬЗОВАТЕЛЯ                      -->
-            <!-- ============================================================ -->
-            <div class="row g-3 mb-4">
-                <div class="col-md-12">
-                    <div class="card bg-light">
-                        <div class="card-body">
-                            <div class="row align-items-center">
-                                <div class="col-md-3 col-lg-2">
-                                    <div class="d-flex align-items-center">
-                                        <i class="fas fa-user fa-2x text-primary me-2"></i>
-                                        <div>
-                                            <h5 class="card-title text-primary mb-0">Пользователь</h5>
-                                            {% if employee and employee.user %}
-                                                <small class="text-success">
-                                                    <i class="fas fa-check-circle me-1"></i>Привязан
-                                                </small>
-                                            {% else %}
-                                                <small class="text-muted">Не привязан</small>
-                                            {% endif %}
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="col-md-5 col-lg-6">
-                                    {% if employee and employee.user %}
-                                        <p class="card-text text-muted small mb-0">
-                                            <i class="fas fa-user me-1"></i>
-                                            Сотрудник привязан к пользователю <strong class="text-primary">{{ employee.user.username }}</strong>
-                                        </p>
-                                    {% else %}
-                                        <p class="card-text text-muted small mb-0">
-                                            <i class="fas fa-info-circle me-1"></i>
-                                            Выберите существующего пользователя или создайте нового
-                                        </p>
-                                    {% endif %}
-                                </div>
-                                <div class="col-md-4 col-lg-4 mt-3 mt-md-0">
-                                    {{ form.user }}
-                                    {% if form.user.errors %}
-                                        <div class="text-danger small mt-1">{{ form.user.errors }}</div>
-                                    {% endif %}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- ============================================================ -->
-            <!-- БЛОК 2: СОЗДАНИЕ НОВОГО ПОЛЬЗОВАТЕЛЯ                         -->
-            <!-- ============================================================ -->
-            {% if not employee or not employee.user %}
-            <div class="row g-3 mb-4">
-                <div class="col-md-12">
-                    <div class="card border-primary">
-                        <div class="card-header bg-primary text-white">
-                            <h5 class="mb-0"><i class="fas fa-user-plus me-2"></i>Создание нового пользователя</h5>
-                        </div>
-                        <div class="card-body">
-                            <p class="text-muted small">Заполните эти поля, если нужно создать нового пользователя</p>
-                            
-                            <div class="row g-3 align-items-center mb-2">
-                                <div class="col-md-3">
-                                    <label class="form-label fw-bold mb-0" for="{{ form.username.id_for_label }}">
-                                        {{ form.username.label }}
-                                    </label>
-                                </div>
-                                <div class="col-md-9">
-                                    {{ form.username }}
-                                    {% if form.username.errors %}
-                                        <div class="text-danger small mt-1">{{ form.username.errors }}</div>
-                                    {% endif %}
-                                    <small class="text-muted">{{ form.username.help_text }}</small>
-                                </div>
-                            </div>
-
-                            <div class="row g-3 align-items-center mb-2">
-                                <div class="col-md-3">
-                                    <label class="form-label fw-bold mb-0" for="{{ form.password.id_for_label }}">
-                                        {{ form.password.label }}
-                                    </label>
-                                </div>
-                                <div class="col-md-9">
-                                    {{ form.password }}
-                                    {% if form.password.errors %}
-                                        <div class="text-danger small mt-1">{{ form.password.errors }}</div>
-                                    {% endif %}
-                                </div>
-                            </div>
-
-                            <div class="row g-3 align-items-center mb-2">
-                                <div class="col-md-3">
-                                    <label class="form-label fw-bold mb-0" for="{{ form.password_confirm.id_for_label }}">
-                                        {{ form.password_confirm.label }}
-                                    </label>
-                                </div>
-                                <div class="col-md-9">
-                                    {{ form.password_confirm }}
-                                    {% if form.password_confirm.errors %}
-                                        <div class="text-danger small mt-1">{{ form.password_confirm.errors }}</div>
-                                    {% endif %}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            {% else %}
-            <!-- Если пользователь уже привязан, показываем информационный блок -->
-            <div class="row g-3 mb-4">
-                <div class="col-md-12">
-                    <div class="card border-success bg-light">
-                        <div class="card-body">
-                            <div class="row align-items-center">
-                                <div class="col-md-3 col-lg-2">
-                                    <div class="d-flex align-items-center">
-                                        <i class="fas fa-check-circle fa-2x text-success me-2"></i>
-                                        <div>
-                                            <h5 class="card-title text-success mb-0">Пользователь привязан</h5>
-                                            <small class="text-muted">{{ employee.user.username }}</small>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="col-md-6 col-lg-7">
-                                    <p class="card-text small mb-0">
-                                        <i class="fas fa-user me-1"></i>
-                                        Сотрудник привязан к пользователю 
-                                        <strong class="text-primary">{{ employee.user.username }}</strong>
-                                    </p>
-                                    <p class="card-text text-muted small mb-0">
-                                        <i class="fas fa-info-circle me-1"></i>
-                                        Для изменения пользователя используйте поле выше
-                                    </p>
-                                </div>
-                                <div class="col-md-3 col-lg-3 text-md-end mt-2 mt-md-0">
-                                    <span class="badge bg-success">
-                                        <i class="fas fa-lock me-1"></i> Создание пользователя скрыто
-                                    </span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            {% endif %}
-
-            <!-- ============================================================ -->
-            <!-- БЛОК 3: ДАННЫЕ СОТРУДНИКА (ЛЕЙБЛ СЛЕВА — ПОЛЕ СПРАВА)        -->
-            <!-- ============================================================ -->
-            <div class="row g-3 mb-4">
-                <div class="col-md-12">
-                    <div class="card border-secondary">
-                        <div class="card-header bg-secondary text-white">
-                            <h5 class="mb-0"><i class="fas fa-id-card me-2"></i>Данные сотрудника</h5>
-                        </div>
-                        <div class="card-body">
-
-                            <!-- Фамилия -->
-                            <div class="row g-3 align-items-center mb-2">
-                                <div class="col-md-3">
-                                    <label class="form-label fw-bold required-field mb-0" for="{{ form.last_name.id_for_label }}">
-                                        {{ form.last_name.label }}
-                                    </label>
-                                </div>
-                                <div class="col-md-9">
-                                    {{ form.last_name }}
-                                    {% if form.last_name.errors %}
-                                        <div class="text-danger small mt-1">{{ form.last_name.errors }}</div>
-                                    {% endif %}
-                                </div>
-                            </div>
-
-                            <!-- Имя -->
-                            <div class="row g-3 align-items-center mb-2">
-                                <div class="col-md-3">
-                                    <label class="form-label fw-bold required-field mb-0" for="{{ form.first_name.id_for_label }}">
-                                        {{ form.first_name.label }}
-                                    </label>
-                                </div>
-                                <div class="col-md-9">
-                                    {{ form.first_name }}
-                                    {% if form.first_name.errors %}
-                                        <div class="text-danger small mt-1">{{ form.first_name.errors }}</div>
-                                    {% endif %}
-                                </div>
-                            </div>
-
-                            <!-- Отчество -->
-                            <div class="row g-3 align-items-center mb-2">
-                                <div class="col-md-3">
-                                    <label class="form-label fw-bold mb-0" for="{{ form.patronymic.id_for_label }}">
-                                        {{ form.patronymic.label }}
-                                    </label>
-                                </div>
-                                <div class="col-md-9">
-                                    {{ form.patronymic }}
-                                    {% if form.patronymic.errors %}
-                                        <div class="text-danger small mt-1">{{ form.patronymic.errors }}</div>
-                                    {% endif %}
-                                </div>
-                            </div>
-
-                            <!-- Табельный номер -->
-                            <div class="row g-3 align-items-center mb-2">
-                                <div class="col-md-3">
-                                    <label class="form-label fw-bold required-field mb-0" for="{{ form.personal_number.id_for_label }}">
-                                        {{ form.personal_number.label }}
-                                    </label>
-                                </div>
-                                <div class="col-md-9">
-                                    {{ form.personal_number }}
-                                    {% if form.personal_number.errors %}
-                                        <div class="text-danger small mt-1">{{ form.personal_number.errors }}</div>
-                                    {% endif %}
-                                </div>
-                            </div>
-
-                            <!-- Участок -->
-                            <div class="row g-3 align-items-center mb-2">
-                                <div class="col-md-3">
-                                    <label class="form-label fw-bold mb-0" for="{{ form.department.id_for_label }}">
-                                        {{ form.department.label }}
-                                    </label>
-                                </div>
-                                <div class="col-md-9">
-                                    {{ form.department }}
-                                    {% if form.department.errors %}
-                                        <div class="text-danger small mt-1">{{ form.department.errors }}</div>
-                                    {% endif %}
-                                </div>
-                            </div>
-
-                            <!-- Должность -->
-                            <div class="row g-3 align-items-center mb-2">
-                                <div class="col-md-3">
-                                    <label class="form-label fw-bold mb-0" for="{{ form.position.id_for_label }}">
-                                        {{ form.position.label }}
-                                    </label>
-                                </div>
-                                <div class="col-md-9">
-                                    {{ form.position }}
-                                    {% if form.position.errors %}
-                                        <div class="text-danger small mt-1">{{ form.position.errors }}</div>
-                                    {% endif %}
-                                </div>
-                            </div>
-
-                            <!-- Статус -->
-                            <div class="row g-3 align-items-center mb-2">
-                                <div class="col-md-3">
-                                    <label class="form-label fw-bold mb-0" for="{{ form.status.id_for_label }}">
-                                        {{ form.status.label }}
-                                    </label>
-                                </div>
-                                <div class="col-md-9">
-                                    {{ form.status }}
-                                    {% if form.status.errors %}
-                                        <div class="text-danger small mt-1">{{ form.status.errors }}</div>
-                                    {% endif %}
-                                </div>
-                            </div>
-
-                            <!-- Дата приема -->
-                            <div class="row g-3 align-items-center mb-2">
-                                <div class="col-md-3">
-                                    <label class="form-label fw-bold mb-0" for="{{ form.hire_date.id_for_label }}">
-                                        {{ form.hire_date.label }}
-                                    </label>
-                                </div>
-                                <div class="col-md-9">
-                                    {{ form.hire_date }}
-                                    {% if form.hire_date.errors %}
-                                        <div class="text-danger small mt-1">{{ form.hire_date.errors }}</div>
-                                    {% endif %}
-                                </div>
-                            </div>
-
-                            <!-- Телефон -->
-                            <div class="row g-3 align-items-center mb-2">
-                                <div class="col-md-3">
-                                    <label class="form-label fw-bold mb-0" for="{{ form.phone.id_for_label }}">
-                                        {{ form.phone.label }}
-                                    </label>
-                                </div>
-                                <div class="col-md-9">
-                                    {{ form.phone }}
-                                    {% if form.phone.errors %}
-                                        <div class="text-danger small mt-1">{{ form.phone.errors }}</div>
-                                    {% endif %}
-                                </div>
-                            </div>
-
-                            <!-- Email -->
-                            <div class="row g-3 align-items-center mb-2">
-                                <div class="col-md-3">
-                                    <label class="form-label fw-bold mb-0" for="{{ form.email.id_for_label }}">
-                                        {{ form.email.label }}
-                                    </label>
-                                </div>
-                                <div class="col-md-9">
-                                    {{ form.email }}
-                                    {% if form.email.errors %}
-                                        <div class="text-danger small mt-1">{{ form.email.errors }}</div>
-                                    {% endif %}
-                                </div>
-                            </div>
-
-                            <!-- Навыки -->
-                            <div class="row g-3 align-items-start mb-2">
-                                <div class="col-md-3">
-                                    <label class="form-label fw-bold mb-0" for="{{ form.skill.id_for_label }}">
-                                        {{ form.skill.label }}
-                                    </label>
-                                </div>
-                                <div class="col-md-9">
-                                    {{ form.skill }}
-                                    {% if form.skill.errors %}
-                                        <div class="text-danger small mt-1">{{ form.skill.errors }}</div>
-                                    {% endif %}
-                                    <small class="text-muted">Удерживайте Ctrl (или Cmd) для выбора нескольких навыков</small>
-                                </div>
-                            </div>
-
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- ============================================================ -->
-            <!-- БЛОК 4: КНОПКИ                                                -->
-            <!-- ============================================================ -->
-            <div class="row">
-                <div class="col-md-12">
-                    <div class="d-flex gap-2 flex-wrap">
-                        <button type="submit" class="btn btn-success">
-                            <i class="fas fa-save me-2"></i>Сохранить
-                        </button>
-                        <a href="{% url 'employees:employee_list' %}" class="btn btn-secondary">
-                            <i class="fas fa-times me-2"></i>Отмена
-                        </a>
-                        {% if employee %}
-                            <a href="{% url 'employees:employee_detail' employee.pk %}" class="btn btn-outline-info ms-auto">
-                                <i class="fas fa-arrow-left me-2"></i>Назад к карточке
-                            </a>
-                        {% endif %}
-                    </div>
-                </div>
-            </div>
-
-        </form>
-    </div>
-</div>
-{% endblock %} {% endcomment %}
