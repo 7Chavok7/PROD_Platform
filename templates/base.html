@@ -79,7 +79,7 @@
             {% if user.is_superuser or user.employee and user.employee.get_access_level in 'manager,director,admin' %}
             <div class="nav-item">
                 <a class="nav-link {% if active_menu == 'dashboard' %}active{% endif %}"
-                   href="{% url 'orders:manager_dashboard' %}">
+                href="{% url 'orders:manager_dashboard' %}">
                     <i class="fas fa-chart-pie me-2"></i> Дашборд
                 </a>
             </div>
@@ -88,13 +88,15 @@
             <!-- ========================================================== -->
             <!-- 2. МОИ ЗАДАЧИ                                               -->
             <!-- ========================================================== -->
-            {% if user.employee and user.employee.get_access_level in 'employee,master' or user.is_superuser %}
-            <div class="nav-item">
-                <a class="nav-link {% if active_menu == 'employee_tasks' %}active{% endif %}" 
-                   href="{% url 'orders:employee_tasks' %}">
-                    <i class="fas fa-tasks me-2"></i> Мои задачи
-                </a>
-            </div>
+            {% if user.is_authenticated %}
+                {% if user.is_superuser or user.employee and user.employee.get_access_level in 'employee,master' %}
+                <div class="nav-item">
+                    <a class="nav-link {% if active_menu == 'employee_tasks' %}active{% endif %}" 
+                    href="{% url 'orders:employee_tasks' %}">
+                        <i class="fas fa-tasks me-2"></i> Мои задачи
+                    </a>
+                </div>
+                {% endif %}
             {% endif %}
 
             <!-- ========================================================== -->
@@ -103,7 +105,7 @@
             {% if user.is_superuser or user.employee and user.employee.get_access_level in 'manager,director,admin' %}
             <div class="nav-item">
                 <a class="nav-link {% if active_menu == 'orders' %}active{% endif %}"
-                   href="{% url 'orders:order_list' %}">
+                href="{% url 'orders:order_list' %}">
                     <i class="fas fa-clipboard-list me-2"></i> Заказы
                 </a>
             </div>
@@ -113,35 +115,37 @@
             <!-- 4. СПРАВОЧНИКИ                                             -->
             <!-- ========================================================== -->
             {% if user.is_superuser or user.employee and user.employee.get_access_level in 'manager,director,admin' %}
+            {% with is_reference_active=active_menu %}
             <div class="nav-item">
-                <a class="nav-link dropdown-toggle" 
-                   href="#" id="referenceMenu" role="button" 
-                   data-bs-toggle="collapse" data-bs-target="#referenceSubmenu" aria-expanded="true">
+                <a class="nav-link dropdown-toggle {% if is_reference_active in 'employees,departments,skills,positions,skill_matrix,customers' %}active{% endif %}" 
+                href="#" id="referenceMenu" role="button" 
+                data-bs-toggle="collapse" data-bs-target="#referenceSubmenu" 
+                aria-expanded="{% if is_reference_active in 'employees,departments,skills,positions,skill_matrix,customers' %}true{% else %}false{% endif %}">
                     <i class="fas fa-book me-2"></i> Справочники
                 </a>
-                <div class="collapse show" id="referenceSubmenu">
+                <div class="collapse {% if is_reference_active in 'employees,departments,skills,positions,skill_matrix,customers' %}show{% endif %}" id="referenceSubmenu">
                     <nav class="nav flex-column ps-3">
                         
                         <!-- ===== МОДУЛЬ: employees (кадры) ===== -->
                         {% if has_employees %}
                             <a class="nav-link {% if active_menu == 'employees' %}active{% endif %}"
-                               href="{% url 'employees:employee_list' %}">
+                            href="{% url 'employees:employee_list' %}">
                                 <i class="fas fa-users me-2"></i> Сотрудники
                             </a>
                             <a class="nav-link {% if active_menu == 'departments' %}active{% endif %}"
-                               href="{% url 'employees:department_list' %}">
+                            href="{% url 'employees:department_list' %}">
                                 <i class="fas fa-building me-2"></i> Участки
                             </a>
                             <a class="nav-link {% if active_menu == 'skills' %}active{% endif %}"
-                               href="{% url 'employees:skill_list' %}">
+                            href="{% url 'employees:skill_list' %}">
                                 <i class="fas fa-star me-2"></i> Навыки
                             </a>
                             <a class="nav-link {% if active_menu == 'positions' %}active{% endif %}"
-                               href="{% url 'employees:position_list' %}">
+                            href="{% url 'employees:position_list' %}">
                                 <i class="fas fa-briefcase me-2"></i> Должности
                             </a>
                             <a class="nav-link {% if active_menu == 'skill_matrix' %}active{% endif %}"
-                               href="{% url 'employees:skill_matrix' %}">
+                            href="{% url 'employees:skill_matrix' %}">
                                 <i class="fas fa-th me-2"></i> Матрица квалификаций
                             </a>
                         {% endif %}
@@ -149,7 +153,7 @@
                         <!-- ===== МОДУЛЬ: customers (контрагенты) ===== -->
                         {% if has_customers %}
                             <a class="nav-link {% if active_menu == 'customers' %}active{% endif %}"
-                               href="{% url 'customers:customer_list' %}">
+                            href="{% url 'customers:customer_list' %}">
                                 <i class="fas fa-handshake me-2"></i> Контрагенты
                             </a>
                         {% endif %}
@@ -167,29 +171,40 @@
                         {% endif %}
                     </nav>
                 </div>
-                <div class="nav-item">
-                    <a class="nav-link dropdown-toggle" 
-                    href="#" id="reportsMenu" role="button" 
-                    data-bs-toggle="collapse" data-bs-target="#reportsSubmenu" aria-expanded="false">
-                        <i class="fas fa-chart-bar me-2"></i> Отчеты
-                    </a>
-                    <div class="collapse" id="reportsSubmenu">
-                        <nav class="nav flex-column ps-3">
-                            <a class="nav-link {% if active_menu == 'customer_orders_report' %}active{% endif %}"
-                            href="{% url 'orders:customer_orders_report' %}">
-                                <i class="fas fa-clipboard-list me-2"></i> Заказы по заказчикам
-                            </a>
-                            <a class="nav-link {% if active_menu == 'customer_reliability_report' %}active{% endif %}"
-                            href="{% url 'orders:customer_reliability_report' %}">
-                                <i class="fas fa-shield-alt me-2"></i> Надежность заказчиков
-                            </a>
-                        </nav>
-                    </div>
             </div>
+            {% endwith %}
             {% endif %}
 
             <!-- ========================================================== -->
-            <!-- 5. АДМИНИСТРИРОВАНИЕ                                       -->
+            <!-- 5. ОТЧЕТЫ                                                  -->
+            <!-- ========================================================== -->
+            {% if user.is_superuser or user.employee and user.employee.get_access_level in 'manager,director,admin' %}
+            {% with is_reports_active=active_menu %}
+            <div class="nav-item">
+                <a class="nav-link dropdown-toggle {% if is_reports_active == 'customer_orders_report' or is_reports_active == 'customer_reliability_report' %}active{% endif %}" 
+                href="#" id="reportsMenu" role="button" 
+                data-bs-toggle="collapse" data-bs-target="#reportsSubmenu" 
+                aria-expanded="{% if is_reports_active == 'customer_orders_report' or is_reports_active == 'customer_reliability_report' %}true{% else %}false{% endif %}">
+                    <i class="fas fa-chart-bar me-2"></i> Отчеты
+                </a>
+                <div class="collapse {% if is_reports_active == 'customer_orders_report' or is_reports_active == 'customer_reliability_report' %}show{% endif %}" id="reportsSubmenu">
+                    <nav class="nav flex-column ps-3">
+                        <a class="nav-link {% if active_menu == 'customer_orders_report' %}active{% endif %}"
+                        href="{% url 'orders:customer_orders_report' %}">
+                            <i class="fas fa-clipboard-list me-2"></i> Заказы по заказчикам
+                        </a>
+                        <a class="nav-link {% if active_menu == 'customer_reliability_report' %}active{% endif %}"
+                        href="{% url 'orders:customer_reliability_report' %}">
+                            <i class="fas fa-shield-alt me-2"></i> Надежность заказчиков
+                        </a>
+                    </nav>
+                </div>
+            </div>
+            {% endwith %}
+            {% endif %}
+
+            <!-- ========================================================== -->
+            <!-- 6. АДМИНИСТРИРОВАНИЕ                                       -->
             <!-- ========================================================== -->
             {% if user.is_superuser %}
             <div class="nav-item">

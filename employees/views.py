@@ -45,17 +45,14 @@ def employee_list(request):
     ).all()
     departments = Department.objects.all()
     
-    # Фильтр по участку (через GET-параметр)
     department_id = request.GET.get('department')
     if department_id:
         employees = employees.filter(department_id=department_id)
         
-    # Фильтр по статусу
     status = request.GET.get('status')
     if status:
         employees = employees.filter(status=status)
         
-    # Поиск
     search = request.GET.get('search')
     if search:
         employees = employees.filter(
@@ -436,7 +433,6 @@ def skill_delete(request, pk):
 @login_required
 @user_passes_test(is_manager)
 def position_list(request):
-    """Список должностей"""
     positions = Position.objects.all()
     context = {
         'positions': positions,
@@ -528,8 +524,6 @@ def position_delete(request, pk):
 @login_required
 @user_passes_test(is_manager)
 def skill_matrix(request):
-    """Матрица квалификаций: сотрудник х навыки"""
-    # Исключаем суперпользователей
     employees = Employee.objects.select_related('department').exclude(
         user__is_superuser=True
     ).all()
@@ -537,17 +531,14 @@ def skill_matrix(request):
     skills = Skill.objects.all().order_by('name')
     departments = Department.objects.all()
     
-    # Собираем данные для матрицы
     matrix = []
     for employee in employees:
-        # Словарь: {skill_id: level}
         skill_levels = {es.skill_id: es.level for es in employee.employeeskill_set.all()}
         matrix.append({
             'employee': employee,
             'levels': skill_levels,
         })
     
-    # Подготавливаем навыки с кодами для шаблона
     skills_data = []
     for skill in skills:
         skills_data.append({
@@ -559,7 +550,7 @@ def skill_matrix(request):
         
     context = {
         'matrix': matrix,
-        'skills': skills_data,  # ✅ Передаем с кодами
+        'skills': skills_data,
         'departments': departments,
         'active_menu': 'skill_matrix',
         'title': 'Матрица квалификаций'
@@ -645,23 +636,21 @@ def home_redirect(request):
         employee = user.employee
         access_level = employee.get_access_level()
         
-        # Сотрудник → Мои задачи
-        if access_level == 'employee':
+        # Сотрудник и Мастер → Мои задачи
+        if access_level in ['employee', 'master']:
             return redirect('orders:employee_tasks')
-        
-        # Мастер → Задачи участка (пока что тоже в Мои задачи, но позже сделаем отдельно)
-        elif access_level == 'master':
-            # TODO: сделать отдельную страницу для мастера
-            return redirect('orders:employee_tasks')
-        
-        # Директор → Дашборд (пока нет, редирект на список заказов)
-        elif access_level == 'director' or access_level == 'admin':
-            # TODO: сделать дашборд для директора
-            return redirect('orders:order_list')
         
         # Менеджер → Список заказов
         elif access_level == 'manager':
             return redirect('orders:order_list')
+        
+        # Директор → Дашборд
+        elif access_level == 'director':
+            return redirect('orders:manager_dashboard')
+        
+        # Админ → Дашборд (или Мои задачи? Лучше Дашборд)
+        elif access_level == 'admin':
+            return redirect('orders:manager_dashboard')
     
-    # Если у пользователя нет роли — редирект на список заказов (как менеджер)
+    # Если у пользователя нет роли — редирект на список заказов
     return redirect('orders:order_list')

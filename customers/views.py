@@ -18,7 +18,6 @@ def is_manager(user):
 def customer_list(request):
     customers = Customer.objects.filter(is_active=True)
     
-    # Поиск
     search = request.GET.get('search')
     if search:
         customers = customers.filter(

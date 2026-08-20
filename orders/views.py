@@ -1423,15 +1423,13 @@ def stage_problem(request, pk):
 def customer_orders_report(request):
     """Отчет «Заказы по заказчикам»"""
     
-    # Получаем параметры фильтрации
+    from .reports import CustomerReports
+    
     date_from = request.GET.get('date_from')
     date_to = request.GET.get('date_to')
     
-    # Генерируем отчет
-    from .reports import CustomerReports
     report_data = CustomerReports.get_customer_orders_summary(date_from, date_to)
     
-    # Общая статистика
     total_orders = sum(item['total_orders'] for item in report_data)
     total_completed = sum(item['completed_orders'] for item in report_data)
     total_overdue = sum(item['overdue_orders'] for item in report_data)
@@ -1443,7 +1441,7 @@ def customer_orders_report(request):
         'total_overdue': total_overdue,
         'date_from': date_from,
         'date_to': date_to,
-        'active_menu': 'reports',
+        'active_menu': 'customer_orders_report',
         'title': 'Заказы по заказчикам',
     }
     return render(request, 'orders/reports/customer_orders.html', context)
@@ -1454,28 +1452,28 @@ def customer_orders_report(request):
 def customer_reliability_report(request):
     """Отчет «Надежность заказчика»"""
     
-    # Получаем параметры фильтрации
+    from .reports import CustomerReports
+    
     date_from = request.GET.get('date_from')
     date_to = request.GET.get('date_to')
     
-    # Генерируем отчет
-    from .reports import CustomerReports
     report_data = CustomerReports.get_customer_reliability(date_from, date_to)
     
     context = {
         'report_data': report_data,
         'date_from': date_from,
         'date_to': date_to,
-        'active_menu': 'reports',
+        'active_menu': 'customer_reliability_report',
         'title': 'Надежность заказчиков',
     }
     return render(request, 'orders/reports/customer_reliability.html', context)
 
 
+
 @login_required
 @user_passes_test(is_manager)
 def customer_detail_report(request, pk):
-    """Детальный отчет по заказчику"""
+    """Детальный отчет по заказчику - список его заказов"""
     
     from .reports import CustomerReports
     from customers.models import Customer
@@ -1486,7 +1484,7 @@ def customer_detail_report(request, pk):
     context = {
         'customer': customer,
         'report_data': report_data,
-        'active_menu': 'reports',
-        'title': f'Детали заказчика: {customer.name}',
+        'active_menu': 'customer_orders_report',
+        'title': f'Заказы заказчика: {customer.name}',
     }
     return render(request, 'orders/reports/customer_order_list.html', context)
