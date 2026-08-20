@@ -252,6 +252,7 @@ class Employee(BaseWorker):
                 self.short_name = f'{self.last_name} {self.first_name[:1]}.'
         
         super().save(*args, **kwargs)
+        # self.sync_user_role()       # Синхронизация user.role и employee.position
         
     def get_access_level(self):
         """Возвращает уровень доступа из должности"""

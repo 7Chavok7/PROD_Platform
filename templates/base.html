@@ -103,13 +103,14 @@
             <!-- 3. ЗАКАЗЫ                                                  -->
             <!-- ========================================================== -->
             {% if user.is_superuser or user.employee and user.employee.get_access_level in 'manager,director,admin' %}
-            <div class="nav-item">
-                <a class="nav-link {% if active_menu == 'orders' %}active{% endif %}"
-                href="{% url 'orders:order_list' %}">
-                    <i class="fas fa-clipboard-list me-2"></i> Заказы
-                </a>
-            </div>
-            {% endif %}
+                <div class="nav-item">
+                    <a class="nav-link {% if active_menu == 'orders' %}active{% endif %}"
+                    href="{% url 'orders:order_list' %}">
+                        <i class="fas fa-clipboard-list me-2"></i> Заказы
+                    </a>
+                </div>
+                {% endif %}
+
 
             <!-- ========================================================== -->
             <!-- 4. СПРАВОЧНИКИ                                             -->

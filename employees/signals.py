@@ -55,3 +55,4 @@ def sync_user_from_employee(sender, instance, created, **kwargs):
 #                 status=Employee.Status.ACTIVE
 #             )
 #             print(f"[Сигнал] Создана пустая анкета для пользователя {instance.username}")
+

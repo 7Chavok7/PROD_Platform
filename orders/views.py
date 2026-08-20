@@ -74,10 +74,17 @@ from .services import OrderProgressService
 from employees.models import Employee
 
 
+# orders/views.py
 def is_manager(user):
+    """Проверка: пользователь может управлять заказами"""
     if user.is_superuser:
         return True
-    return user.is_authenticated and user.role in ['admin', 'director', 'manager']
+    if not user.is_authenticated:
+        return False
+    if hasattr(user, 'employee') and user.employee:
+        access_level = user.employee.get_access_level()
+        return access_level in ['admin', 'director', 'manager']
+    return False
 
 # =========================================================
 # =                     DASHBOARD                         =
@@ -105,12 +112,13 @@ def manager_dashboard(request):
     date_to = request.GET.get('date_to')
     
     # --- БАЗОВЫЙ ЗАПРОС ---
-    # Для директора, админа или суперпользователя - все заказы
-    if request.user.is_superuser or request.user.role in ['admin', 'director']:
-        orders = Order.objects.all()
+    user_access = request.user.employee.get_access_level() if hasattr(request.user, 'employee') and request.user.employee else 'employee'
+    
+    if request.user.is_superuser or user_access in ['admin', 'director']:
+        orders = Order.objects.filter(is_deleted=False)
     else:
         # Менеджер - только свои заказы
-        orders = Order.objects.filter(responsible_manager=request.user)
+        orders = Order.objects.filter(responsible_manager=request.user, is_deleted=False)
         
     # Применяем фильтры
     if status_filter:
@@ -139,8 +147,20 @@ def manager_dashboard(request):
     # --- АКТИВНЫЕ ЗАКАЗЫ (для таблицы) ---
     active_orders = orders.filter(
         status__in=[Order.Status.IN_PROGRESS, Order.Status.DRAFT]
-    ).select_related('responsible_manager').prefetch_related('stages')
+    ).select_related('responsible_manager').prefetch_related('stages')[:20]
     
+    for order in active_orders:
+        total_stages = order.stages.count()
+        completed_stages = order.stages.filter(status=Stage.Status.COMPLETED).count()
+        order.progress = int((completed_stages / total_stages * 100)) if total_stages > 0 else 0
+        order.completed_count = completed_stages
+        order.is_overdue = (
+            order.status == Order.Status.IN_PROGRESS and
+            order.planned_completion_date and
+            order.planned_completion_date < timezone.now().date()
+        )
+    
+    # --- ГАНТ-ДАННЫЕ ---
     gantt_data = []
     for order in active_orders:
         for stage in order.stages.all().order_by('number'):
@@ -163,21 +183,7 @@ def manager_dashboard(request):
                 'color': status_colors.get(stage.status, '#6c757d'),
             })
     
-    # Добавляем прогресс для каждого заказа
-    for order in active_orders:
-        total_stages = order.stages.count()
-        completed_stages = order.stages.filter(status=Stage.Status.COMPLETED).count()
-        order.progress = int((completed_stages / total_stages * 100)) if total_stages > 0 else 0
-        order.completed_count = completed_stages
-        order.is_overdue = (
-            order.status == Order.Status.IN_PROGRESS and
-            order.planned_completion_date and
-            order.planned_completion_date < timezone.now().date()
-        )
-    
-    # --- ДАННЫЕ ДЛЯ ГРАФИКОВ (ПРОДВИНУТЫЙ РЕЖИМ) ---
-    
-    # 1. Статусы для круговой диаграммы
+    # --- ДАННЫЕ ДЛЯ ГРАФИКОВ ---
     status_data = []
     status_colors = {
         'draft': '#6c757d',
@@ -194,7 +200,7 @@ def manager_dashboard(request):
                 'color': status_colors.get(status_code, '#6c757d')
             })
     
-    # 2. Динамика заказов по дням (последние 30 дней)
+    # Динамика заказов по дням
     today = timezone.now().date()
     days_ago = 30
     
@@ -204,7 +210,6 @@ def manager_dashboard(request):
         {'day': 'date(created_at)'}
     ).values('day').annotate(count=Count('id')).order_by('day')
     
-    # Заполняем массив для всех дней
     daily_labels = []
     daily_values = []
     for i in range(days_ago):
@@ -218,7 +223,7 @@ def manager_dashboard(request):
             idx = daily_labels.index(day_str)
             daily_values[idx] = stat['count']
     
-    # 3. Загрузка сотрудников (если модуль employees активен)
+    # Загрузка сотрудников
     employee_load = []
     if apps.is_installed('employees'):
         from employees.models import Employee
@@ -236,12 +241,12 @@ def manager_dashboard(request):
                 'name': emp.full_name,
                 'active': active,
                 'in_work': in_work,
-                'load': active * 2  # Условная загрузка (1 задача = 2 часа)
+                'load': active * 2
             })
     
-    # 4. Загрузка участков (для директора)
+    # Загрузка участков
     department_load = []
-    if apps.is_installed('employees') and request.user.role in ['director', 'admin']:
+    if apps.is_installed('employees') and user_access in ['director', 'admin']:
         from employees.models import Department
         departments = Department.objects.all()
         for dept in departments:
@@ -258,9 +263,9 @@ def manager_dashboard(request):
                 'load': load_percent
             })
     
-    # 5. Топ-менеджеры (для директора)
+    # Топ-менеджеры
     top_managers = []
-    if request.user.role in ['director', 'admin']:
+    if user_access in ['director', 'admin']:
         from django.contrib.auth import get_user_model
         User = get_user_model()
         top_managers = User.objects.filter(
@@ -279,7 +284,7 @@ def manager_dashboard(request):
         'overdue': overdue,
         'completion_rate': completion_rate,
         'active_orders': active_orders,
-        'gantt_data': json.dumps(gantt_data),    # Передаем в JSON
+        'gantt_data': json.dumps(gantt_data),
         'status_data': status_data,
         'daily_labels': daily_labels,
         'daily_values': daily_values,
@@ -288,9 +293,8 @@ def manager_dashboard(request):
         'top_managers': top_managers,
         'active_menu': 'dashboard',
         'title': 'Дашборд',
-        # Для отображения в шаблоне
-        'is_manager': request.user.role == 'manager' and not request.user.is_superuser,
-        'show_all_orders': request.user.is_superuser or request.user.role in ['admin', 'director'],
+        'is_manager': user_access == 'manager' and not request.user.is_superuser,
+        'show_all_orders': request.user.is_superuser or user_access in ['admin', 'director'],
     }
     
     return render(request, 'orders/manager_dashboard.html', context)
@@ -866,18 +870,17 @@ def stage_problem(request, pk):
 def order_list(request):
     """Список заказов с фильтрацией"""
     
+    user_access = request.user.employee.get_access_level() if hasattr(request.user, 'employee') and request.user.employee else 'employee'
+    
     # Базовый запрос с учетом прав
-    if request.user.is_superuser or request.user.role in ['admin', 'director']:
-        # Администраторы видят все заказы, включая удаленные
+    if request.user.is_superuser or user_access in ['admin', 'director']:
         orders = Order.objects.select_related(
             'customer', 'responsible_manager'
         ).prefetch_related('stages').all()
         
-        # Но по умолчанию скрываем удаленные (можно показать через параметр)
         show_deleted = request.GET.get('show_deleted', 'false') == 'true'
         if not show_deleted:
             orders = orders.filter(is_deleted=False)
-            
     else:
         # Менеджер - только свои, не удаленные
         orders = Order.objects.select_related(
@@ -887,17 +890,15 @@ def order_list(request):
             is_deleted=False
         )
     
-    # Фильтр по статусу
+    # Фильтры
     status = request.GET.get('status')
     if status:
         orders = orders.filter(status=status)
     
-    # Фильтр по приоритету
     priority = request.GET.get('priority')
     if priority:
         orders = orders.filter(priority=priority)
     
-    # Поиск
     search = request.GET.get('search')
     if search:
         orders = orders.filter(
@@ -906,7 +907,6 @@ def order_list(request):
             Q(customer__name__icontains=search)
         )
     
-    # Добавляем прогресс через сервис
     orders = OrderProgressService.get_orders_with_progress(orders)
     
     context = {
@@ -915,7 +915,7 @@ def order_list(request):
         'active_menu': 'orders',
         'title': 'Заказы',
         'show_deleted': request.GET.get('show_deleted', 'false') == 'true',
-        'is_admin': request.user.is_superuser or request.user.role in ['admin', 'director'],
+        'is_admin': request.user.is_superuser or user_access in ['admin', 'director'],
     }
     return render(request, 'orders/order_list.html', context)
 
@@ -926,30 +926,28 @@ def order_detail(request, pk):
     """Детальная страница заказа"""
     order = get_object_or_404(Order, pk=pk)
     
+    user_access = request.user.employee.get_access_level() if hasattr(request.user, 'employee') and request.user.employee else 'employee'
+    
     # Проверяем доступ к удаленному заказу
     if order.is_deleted:
-        if not (request.user.is_superuser or request.user.role in ['admin', 'director']):
+        if not (request.user.is_superuser or user_access in ['admin', 'director']):
             messages.error(request, 'Заказ был удален и недоступен для просмотра.')
             return redirect('orders:order_list')
     
-    # Используем сервис для расчёта
     progress = OrderProgressService.get_progress_percent(order)
     completed_count = OrderProgressService.get_completed_stages_count(order)
     
-    # Подготовка данных для Гант-диаграмм
     gantt_data = []
     for stage in order.stages.all().order_by('number'):
-        # Определяем цвет статуса для Гант
         status_colors = {
-            'pending': '#6c757d',       # серый
-            'assigned': '#0d6efd',      # синий
-            'in_progress': '#0dca0d',   # голубой
-            'completed': '#198754',     # зеленый
-            'defect': '#dc3545',        # красный
-            'problem': '#ffc107',       # желтый
-            'on_hold': '#fd7e14',       # оранжевый
+            'pending': '#6c757d',
+            'assigned': '#0d6efd',
+            'in_progress': '#0dcaf0',
+            'completed': '#198754',
+            'defect': '#dc3545',
+            'problem': '#ffc107',
+            'on_hold': '#fd7e14',
         }
-        
         gantt_data.append({
             'id': str(stage.id),
             'name': f'Этап {stage.number}: {stage.name}',
@@ -964,10 +962,10 @@ def order_detail(request, pk):
         'order': order,
         'progress': progress,
         'completed_count': completed_count,
-        'gantt_data': json.dumps(gantt_data),    # Передаем в JSON
+        'gantt_data': json.dumps(gantt_data),
         'active_menu': 'orders',
         'title': f'{order.number} — {order.name}',
-        'is_admin': request.user.is_superuser or request.user.role in ['admin', 'director'],
+        'is_admin': request.user.is_superuser or user_access in ['admin', 'director'],
     }
     return render(request, 'orders/order_detail.html', context)
 
@@ -978,7 +976,7 @@ def order_create(request):
     if request.method == 'POST':
         form = OrderForm(request.POST, request.FILES)
         
-        # ✅ ОТЛАДКА: выводим ошибки формы
+        # ОТЛАДКА: выводим ошибки формы
         if not form.is_valid():
             print("❌ ФОРМА НЕ ВАЛИДНА!")
             print(form.errors)

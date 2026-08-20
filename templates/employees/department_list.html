@@ -33,14 +33,20 @@
                     <tr>
                         <td><strong>{{ dept.name }}</strong></td>
                         <td><code>{{ dept.code }}</code></td>
-                        <td>{{ dept.head|default:'—' }}</td>
+                        <td>
+                            {% if dept.head %}
+                                <a href="{% url 'employees:employee_detail' dept.head.pk %}">{{ dept.head }}</a>
+                            {% else %}
+                                <span class="text-muted">—</span>
+                            {% endif %}
+                        </td>
                         <td>{{ dept.comment|truncatechars:60|default:'—' }}</td>
                         <td>
                             <div class="actions">
                                 <a href="{% url 'employees:department_edit' dept.pk %}" class="btn btn-sm btn-outline-primary" data-bs-toggle="tooltip" title="Редактировать">
                                     <i class="fas fa-edit"></i>
                                 </a>
-                                <a href="{% url 'employees:department_delete' dept.pk %}" class="btn btn-sm btn-outline-danger confirm-delete" data-bs-toggle="tooltip" title="Удалить">
+                                <a href="{% url 'employees:department_delete' dept.pk %}" class="btn btn-sm btn-outline-danger" data-bs-toggle="tooltip" title="Удалить">
                                     <i class="fas fa-trash"></i>
                                 </a>
                             </div>

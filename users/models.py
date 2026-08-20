@@ -10,13 +10,6 @@ class User(AbstractUser):
         MANAGER = 'manager', 'Менеджер'
         EMPLOYEE = 'employee', 'Сотрудник'
         LOGIST = 'logist', 'Логист'
-        
-    role = models.CharField(
-        max_length=20,
-        choices=Role.choices,
-        default=Role.EMPLOYEE,
-        verbose_name='Роль'
-    )
     
     # Наследуем все поля от AbstractUser
     # password, username, email, first_name, last_name уже есть
@@ -26,3 +19,14 @@ class User(AbstractUser):
     
     def __str__(self):
         return self.username
+    
+    def get_access_level(self):
+        """Получает уровень доступа из анкеты сотрудника"""
+        if hasattr(self, 'employee') and self.employee:
+            return self.employee.get_access_level()
+        return 'employee'
+    
+    def is_manager(self):
+        """Проверка, имеет ли пользователь права менеджера"""
+        access_level = self.get_access_level()
+        return access_level in ['manager', 'director', 'admin']

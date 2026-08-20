@@ -26,11 +26,17 @@ from .forms import (
 # =========================================================
 # =   ПРОВЕРКА ПРАВ                                       =
 # =========================================================
+# employees/views.py
 def is_manager(user):
     """Проверка: пользователь может управлять справочниками"""
     if user.is_superuser:
         return True
-    return user.is_authenticated and user.role in ['admin', 'director', 'manager']
+    if not user.is_authenticated:
+        return False
+    if hasattr(user, 'employee') and user.employee:
+        access_level = user.employee.get_access_level()
+        return access_level in ['admin', 'director', 'manager']
+    return False
 
 
 # =========================================================
@@ -249,7 +255,7 @@ def employee_delete(request, pk):
 @login_required
 @user_passes_test(is_manager)
 def department_list(request):
-    departments = Department.objects.all()
+    departments = Department.objects.select_related('head').all()
     context = {
         'departments': departments,
         'active_menu': 'departments',
@@ -628,10 +634,9 @@ def employee_remove_skill(request, pk):
 # =========================================================
 @login_required
 def home_redirect(request):
-    """Перенаправляет пользователя на его рабочую страницу в зависимости от роли"""
+    """Перенаправляет пользователя на его рабочую страницу"""
     user = request.user
     
-    # Если пользователь — сотрудник (есть анкета)
     if hasattr(user, 'employee') and user.employee:
         employee = user.employee
         access_level = employee.get_access_level()
@@ -644,13 +649,9 @@ def home_redirect(request):
         elif access_level == 'manager':
             return redirect('orders:order_list')
         
-        # Директор → Дашборд
-        elif access_level == 'director':
-            return redirect('orders:manager_dashboard')
-        
-        # Админ → Дашборд (или Мои задачи? Лучше Дашборд)
-        elif access_level == 'admin':
+        # Директор и Админ → Дашборд
+        elif access_level in ['director', 'admin']:
             return redirect('orders:manager_dashboard')
     
-    # Если у пользователя нет роли — редирект на список заказов
+    # Если нет анкеты → список заказов
     return redirect('orders:order_list')
