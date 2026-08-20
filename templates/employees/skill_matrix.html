@@ -21,6 +21,41 @@
     </div>
 </div>
 
+<!-- ============================================================ -->
+<!-- ФИЛЬТР (ПОДНЯТ НАВЕРХ)                                       -->
+<!-- ============================================================ -->
+<div class="card mb-4">
+    <div class="card-body">
+        <div class="row g-3 align-items-center">
+            <div class="col-md-5">
+                <div class="input-group">
+                    <span class="input-group-text bg-white">
+                        <i class="fas fa-search text-muted"></i>
+                    </span>
+                    <input type="text" 
+                           id="matrixSearch" 
+                           class="form-control" 
+                           placeholder="Поиск по ФИО сотрудника..."
+                           style="border-left: none;">
+                </div>
+            </div>
+            <div class="col-md-4">
+                <select id="departmentFilter" class="form-select">
+                    <option value="">Все участки</option>
+                    {% for dept in departments %}
+                        <option value="{{ dept.pk }}">{{ dept.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <button class="btn btn-outline-secondary w-100" id="resetFilters" type="button">
+                    <i class="fas fa-undo me-1"></i>Сбросить фильтры
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- КАРТОЧКА-ПОДСКАЗКА -->
 <div class="card bg-light mb-4">
     <div class="card-body py-2">
@@ -33,7 +68,9 @@
     </div>
 </div>
 
-<!-- МАТРИЦА -->
+<!-- ============================================================ -->
+<!-- МАТРИЦА                                                      -->
+<!-- ============================================================ -->
 <div class="card">
     <div class="card-body p-0">
         <div class="table-responsive">
@@ -54,7 +91,7 @@
                         {% endfor %}
                     </tr>
                 </thead>
-                <tbody>
+                <tbody id="matrixBody">
                     {% for row in matrix %}
                     <tr>
                         <!-- ФИО сотрудника (фиксированная колонка) -->
@@ -109,86 +146,120 @@
 </div>
 
 <!-- ============================================================ -->
-<!-- РАСШИФРОВКА НАВЫКОВ - ТАБЛИЦА                                -->
+<!-- СТАТИСТИКА + РАСШИФРОВКА (ГОРИЗОНТАЛЬНО)                    -->
 <!-- ============================================================ -->
-{% if skills %}
-<div class="card mt-3">
-    <div class="card-header bg-light">
-        <i class="fas fa-info-circle me-2"></i>Расшифровка навыков
-        <span class="badge bg-secondary ms-2">{{ skills|length }}</span>
-    </div>
-    <div class="card-body p-0">
-        <div class="table-responsive">
-            <table class="table table-sm table-hover mb-0">
-                <thead class="table-light">
-                    <tr>
-                        <th style="width: 80px;">Код</th>
-                        <th>Название</th>
-                        <th style="width: 150px;">Категория</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for skill in skills %}
-                    <tr>
-                        <td>
-                            <span class="badge bg-secondary">{{ skill.code }}</span>
-                        </td>
-                        <td>{{ skill.name }}</td>
-                        <td>
-                            {% if skill.category %}
-                                <span class="text-muted small">{{ skill.category }}</span>
-                            {% else %}
-                                <span class="text-muted">—</span>
-                            {% endif %}
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-    </div>
-</div>
-{% endif %}
-
-<!-- СТАТИСТИКА + ФИЛЬТРЫ -->
 <div class="row mt-4">
-    <div class="col-md-6">
-        <div class="card">
+    <!-- СТАТИСТИКА -->
+    <div class="col-md-4">
+        <div class="card h-100">
             <div class="card-header">
                 <i class="fas fa-chart-bar me-2"></i>Статистика
             </div>
             <div class="card-body">
-                <div class="row">
+                <div class="row text-center">
                     <div class="col-6">
-                        <small class="text-muted">Всего сотрудников</small>
-                        <h4>{{ matrix|length }}</h4>
+                        <div class="border-end">
+                            <small class="text-muted d-block">Сотрудников</small>
+                            <h3 class="mb-0">{{ matrix|length }}</h3>
+                        </div>
                     </div>
                     <div class="col-6">
-                        <small class="text-muted">Всего навыков</small>
-                        <h4>{{ skills|length }}</h4>
+                        <small class="text-muted d-block">Навыков</small>
+                        <h3 class="mb-0">{{ skills|length }}</h3>
+                    </div>
+                </div>
+                <hr class="my-2">
+                <div class="row text-center small">
+                    <div class="col-6">
+                        <span class="text-muted">Средний уровень</span>
+                        <div class="fw-bold">
+                            {% with total=0 count=0 %}
+                                {% for row in matrix %}
+                                    {% for skill in skills %}
+                                        {% with level=row.levels|get_item:skill.id %}
+                                            {% if level %}
+                                                {% with total=total|add:level count=count|add:1 %}
+                                                {% endwith %}
+                                            {% endif %}
+                                        {% endwith %}
+                                    {% endfor %}
+                                {% endfor %}
+                                {% if count > 0 %}
+                                    {{ total|floatformat:1 }}
+                                {% else %}
+                                    —
+                                {% endif %}
+                            {% endwith %}
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <span class="text-muted">Макс. уровень</span>
+                        <div class="fw-bold">
+                            {% with max_level=0 %}
+                                {% for row in matrix %}
+                                    {% for skill in skills %}
+                                        {% with level=row.levels|get_item:skill.id %}
+                                            {% if level and level > max_level %}
+                                                {% with max_level=level %}
+                                                {% endwith %}
+                                            {% endif %}
+                                        {% endwith %}
+                                    {% endfor %}
+                                {% endfor %}
+                                {% if max_level > 0 %}
+                                    {{ max_level }}
+                                {% else %}
+                                    —
+                                {% endif %}
+                            {% endwith %}
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
-    <div class="col-md-6">
-        <div class="card">
+
+    <!-- РАСШИФРОВКА НАВЫКОВ -->
+    <div class="col-md-8">
+        <div class="card h-100">
             <div class="card-header">
-                <i class="fas fa-filter me-2"></i>Фильтр
+                <i class="fas fa-info-circle me-2"></i>Расшифровка навыков
+                <span class="badge bg-secondary ms-2">{{ skills|length }}</span>
             </div>
-            <div class="card-body">
-                <div class="row g-2">
-                    <div class="col-md-6">
-                        <input type="text" id="matrixSearch" class="form-control form-control-sm" placeholder="Поиск по ФИО...">
-                    </div>
-                    <div class="col-md-6">
-                        <select id="departmentFilter" class="form-select form-select-sm">
-                            <option value="">Все участки</option>
-                            {% for dept in departments %}
-                                <option value="{{ dept.pk }}">{{ dept.name }}</option>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th style="width: 80px;">Код</th>
+                                <th>Название</th>
+                                <th style="width: 150px;">Категория</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for skill in skills %}
+                            <tr>
+                                <td>
+                                    <span class="badge bg-secondary">{{ skill.code }}</span>
+                                </td>
+                                <td>{{ skill.name }}</td>
+                                <td>
+                                    {% if skill.category %}
+                                        <span class="text-muted small">{{ skill.category }}</span>
+                                    {% else %}
+                                        <span class="text-muted">—</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="3" class="text-center py-3 text-muted">
+                                    Навыки не добавлены
+                                </td>
+                            </tr>
                             {% endfor %}
-                        </select>
-                    </div>
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
@@ -198,4 +269,19 @@
 
 {% block extra_js %}
 <script src="{% static 'js/skill_matrix.js' %}"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Кнопка сброса фильтров
+    const resetBtn = document.getElementById('resetFilters');
+    if (resetBtn) {
+        resetBtn.addEventListener('click', function() {
+            document.getElementById('matrixSearch').value = '';
+            document.getElementById('departmentFilter').value = '';
+            // Триггерим событие для обновления фильтрации
+            document.getElementById('matrixSearch').dispatchEvent(new Event('input'));
+            document.getElementById('departmentFilter').dispatchEvent(new Event('change'));
+        });
+    }
+});
+</script>
 {% endblock %}

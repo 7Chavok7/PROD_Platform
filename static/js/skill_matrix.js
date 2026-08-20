@@ -5,7 +5,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     const searchInput = document.getElementById('matrixSearch');
     const departmentFilter = document.getElementById('departmentFilter');
-    const rows = document.querySelectorAll('tbody tr');
+    const rows = document.querySelectorAll('#matrixBody tr');
     
     if (!searchInput || !departmentFilter || !rows.length) {
         return;
@@ -44,6 +44,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     departmentFilter.addEventListener('change', filterMatrix);
     
+    // Подсветка строк при наведении
     rows.forEach(row => {
         row.addEventListener('mouseenter', function() {
             this.style.backgroundColor = 'rgba(13, 110, 253, 0.05)';
@@ -53,7 +54,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
     
-    // Добавляем подсказки для заголовков
+    // Добавляем тултипы для заголовков
     document.querySelectorAll('.matrix-table thead th[title]').forEach(function(th) {
         const fullName = th.getAttribute('title');
         if (fullName) {
@@ -63,13 +64,15 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
     
-    // Инициализируем тултипы
     if (typeof bootstrap !== 'undefined') {
         const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
         tooltipTriggerList.map(function(el) {
             return new bootstrap.Tooltip(el);
         });
     }
+    
+    // Инициализация
+    filterMatrix();
     
     console.log('📊 Матрица квалификаций загружена');
 });
