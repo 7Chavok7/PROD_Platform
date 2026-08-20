@@ -1,0 +1,66 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block breadcrumb_items %}
+<li class="breadcrumb-item"><a href="{% url 'employees:position_list' %}">Должности</a></li>
+<li class="breadcrumb-item active">{{ title }}</li>
+{% endblock %}
+
+{% block content %}
+<div class="card border-danger">
+    <div class="card-header bg-danger text-white">
+        <h4 class="mb-0"><i class="fas fa-exclamation-triangle me-2"></i>{{ title }}</h4>
+    </div>
+    <div class="card-body">
+        <p class="fs-5">
+            Вы уверены, что хотите удалить должность <strong>{{ position.name }}</strong>?
+        </p>
+        <p class="text-muted">
+            Это действие <strong>необратимо</strong>. Все данные должности будут удалены.
+            {% if position.employees.count > 0 %}
+                <br>
+                <span class="text-danger">
+                    <i class="fas fa-exclamation-circle me-1"></i>
+                    Внимание! Эта должность привязана к {{ position.employees.count }} сотрудникам.
+                    Перед удалением переназначьте сотрудников на другую должность.
+                </span>
+            {% endif %}
+        </p>
+
+        <div class="card bg-light mt-3">
+            <div class="card-body">
+                <table class="table table-borderless mb-0">
+                    <tr>
+                        <th style="width: 30%;">Название</th>
+                        <td>{{ position.name }}</td>
+                    </tr>
+                    <tr>
+                        <th>Код</th>
+                        <td><code>{{ position.code }}</code></td>
+                    </tr>
+                    <tr>
+                        <th>Уровень доступа</th>
+                        <td>{{ position.get_access_level_display }}</td>
+                    </tr>
+                    <tr>
+                        <th>Количество сотрудников</th>
+                        <td>{{ position.employees.count }}</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+
+        <form method="post" class="mt-4">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-danger">
+                <i class="fas fa-trash me-2"></i>Удалить должность
+            </button>
+            <a href="{% url 'employees:position_list' %}" class="btn btn-secondary">
+                <i class="fas fa-times me-2"></i>Отмена
+            </a>
+        </form>
+    </div>
+</div>
+{% endblock %}

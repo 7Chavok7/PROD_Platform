@@ -1,0 +1,68 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block breadcrumb_items %}
+<li class="breadcrumb-item"><a href="{% url 'employees:department_list' %}">Участки</a></li>
+<li class="breadcrumb-item active">{{ title }}</li>
+{% endblock %}
+
+{% block content %}
+<div class="card border-danger">
+    <div class="card-header bg-danger text-white">
+        <h4 class="mb-0"><i class="fas fa-exclamation-triangle me-2"></i>{{ title }}</h4>
+    </div>
+    <div class="card-body">
+        <p class="fs-5">
+            Вы уверены, что хотите удалить участок <strong>{{ department.name }}</strong>?
+        </p>
+        <p class="text-muted">
+            Это действие <strong>необратимо</strong>. Все данные участка будут удалены.
+            {% if department.employees.count > 0 %}
+                <br>
+                <span class="text-danger">
+                    <i class="fas fa-exclamation-circle me-1"></i>
+                    Внимание! К этому участку привязано {{ department.employees.count }} сотрудников.
+                    Перед удалением переназначьте их на другой участок.
+                </span>
+            {% endif %}
+        </p>
+
+        <div class="card bg-light mt-3">
+            <div class="card-body">
+                <table class="table table-borderless mb-0">
+                    <tr>
+                        <th style="width: 30%;">Код участка</th>
+                        <td><code>{{ department.code }}</code></td>
+                    </tr>
+                    <tr>
+                        <th>Руководитель</th>
+                        <td>{{ department.head|default:'—' }}</td>
+                    </tr>
+                    <tr>
+                        <th>Количество сотрудников</th>
+                        <td>{{ department.employees.count }}</td>
+                    </tr>
+                    {% if department.comment %}
+                    <tr>
+                        <th>Описание</th>
+                        <td>{{ department.comment }}</td>
+                    </tr>
+                    {% endif %}
+                </table>
+            </div>
+        </div>
+
+        <form method="post" class="mt-4">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-danger">
+                <i class="fas fa-trash me-2"></i>Удалить участок
+            </button>
+            <a href="{% url 'employees:department_list' %}" class="btn btn-secondary">
+                <i class="fas fa-times me-2"></i>Отмена
+            </a>
+        </form>
+    </div>
+</div>
+{% endblock %}
