@@ -27,7 +27,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
     backdrop.addEventListener('click', toggleSidebar);
 
-    // Закрываем сайдбар при клике вне его
     document.addEventListener('click', function(e) {
         if (window.innerWidth <= 768) {
             const isClickInside = sidebar.contains(e.target) || sidebarToggle?.contains(e.target);
@@ -38,23 +37,58 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // =========================================================
-    // 2. АВТОМАТИЧЕСКОЕ СКРЫТИЕ ALERT-СООБЩЕНИЙ
+    // 2. ПРЕОБРАЗОВАНИЕ ALERT В TOAST
     // =========================================================
-    const alerts = document.querySelectorAll('.alert:not(.alert-permanent)');
-    alerts.forEach(function(alert) {
-        setTimeout(function() {
-            const closeBtn = alert.querySelector('.btn-close');
-            if (closeBtn) {
-                closeBtn.click();
-            } else {
-                alert.style.transition = 'opacity 0.5s';
-                alert.style.opacity = '0';
-                setTimeout(function() {
-                    alert.remove();
-                }, 500);
-            }
-        }, 5000);
-    });
+    function convertAlertsToToasts() {
+        const alerts = document.querySelectorAll('.alert:not(.alert-permanent)');
+        alerts.forEach(function(alert) {
+            // Определяем тип
+            let type = 'info';
+            if (alert.classList.contains('alert-success')) type = 'success';
+            else if (alert.classList.contains('alert-danger')) type = 'error';
+            else if (alert.classList.contains('alert-warning')) type = 'warning';
+            else if (alert.classList.contains('alert-info')) type = 'info';
+            
+            // Получаем текст и иконку
+            const icon = alert.querySelector('i');
+            const text = alert.textContent.trim();
+            
+            // Создаем toast
+            const toast = document.createElement('div');
+            toast.className = `custom-toast toast-${type}`;
+            toast.innerHTML = `
+                <div class="toast-content">
+                    <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : type === 'warning' ? 'exclamation-triangle' : 'info-circle'}"></i>
+                    <span>${text}</span>
+                </div>
+                <button class="toast-close">&times;</button>
+            `;
+            
+            // Добавляем в body
+            document.body.appendChild(toast);
+            
+            // Показываем с анимацией
+            setTimeout(() => toast.classList.add('show'), 50);
+            
+            // Закрываем через 4 секунды
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 300);
+            }, 4000);
+            
+            // Закрытие по кнопке
+            toast.querySelector('.toast-close').addEventListener('click', function() {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 300);
+            });
+            
+            // Удаляем оригинальный alert
+            alert.remove();
+        });
+    }
+    
+    // Запускаем конвертацию после загрузки
+    convertAlertsToToasts();
 
     // =========================================================
     // 3. ПОДТВЕРЖДЕНИЕ УДАЛЕНИЯ
@@ -134,40 +168,44 @@ function getCookie(name) {
     return cookieValue;
 }
 
-// Создание уведомления (toast)
-function showToast(message, type = 'info', duration = 3000) {
+// Глобальная функция показа уведомлений
+function showToast(message, type = 'info', duration = 4000) {
     // Удаляем старые уведомления
     document.querySelectorAll('.custom-toast').forEach(el => el.remove());
     
     const types = {
         success: 'check-circle',
-        danger: 'exclamation-circle',
+        error: 'exclamation-circle',
         warning: 'exclamation-triangle',
         info: 'info-circle'
     };
     
     const toast = document.createElement('div');
-    toast.className = `custom-toast alert alert-${type} alert-dismissible fade show position-fixed`;
-    toast.style.cssText = `
-        top: 80px;
-        right: 20px;
-        z-index: 9999;
-        max-width: 400px;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-        animation: slideInRight 0.3s ease;
-    `;
+    toast.className = `custom-toast toast-${type}`;
     toast.innerHTML = `
-        <i class="fas fa-${types[type] || 'info-circle'} me-2"></i>
-        ${message}
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        <div class="toast-content">
+            <i class="fas fa-${types[type] || 'info-circle'}"></i>
+            <span>${message}</span>
+        </div>
+        <button class="toast-close">&times;</button>
     `;
     
     document.body.appendChild(toast);
     
+    // Показываем с анимацией
+    setTimeout(() => toast.classList.add('show'), 50);
+    
+    // Закрытие по кнопке
+    toast.querySelector('.toast-close').addEventListener('click', function() {
+        toast.classList.remove('show');
+        setTimeout(() => toast.remove(), 300);
+    });
+    
+    // Автозакрытие
     if (duration > 0) {
         setTimeout(() => {
-            const closeBtn = toast.querySelector('.btn-close');
-            if (closeBtn) closeBtn.click();
+            toast.classList.remove('show');
+            setTimeout(() => toast.remove(), 300);
         }, duration);
     }
     

@@ -132,49 +132,32 @@
                         <td>
                             <small class="text-muted">{{ order.responsible_manager.get_full_name|default:order.responsible_manager.username|truncatechars:12 }}</small>
                         </td>
-                        <td class="text-center" style="white-space: nowrap;">
+                            <td class="text-center" style="white-space: nowrap;">
                             {% if order.is_deleted %}
                                 <span class="text-muted small">Удален</span>
                             {% else %}
                                 <a href="{% url 'orders:order_edit' order.pk %}" 
-                                   class="btn btn-sm btn-outline-primary" 
-                                   title="Редактировать"
-                                   onclick="event.stopPropagation();">
+                                class="btn btn-sm btn-outline-primary" 
+                                title="Редактировать"
+                                onclick="event.stopPropagation();">
                                     <i class="fas fa-edit"></i>
                                 </a>
                                 <a href="{% url 'orders:order_detail' order.pk %}" 
-                                   class="btn btn-sm btn-outline-secondary" 
-                                   title="Открыть"
-                                   onclick="event.stopPropagation();">
+                                class="btn btn-sm btn-outline-secondary" 
+                                title="Открыть"
+                                onclick="event.stopPropagation();">
                                     <i class="fas fa-eye"></i>
                                 </a>
-                                <td class="text-center" style="white-space: nowrap;">
-                                    {% if order.is_deleted %}
-                                        <span class="text-muted small">Удален</span>
-                                    {% else %}
-                                        <a href="{% url 'orders:order_edit' order.pk %}" 
-                                        class="btn btn-sm btn-outline-primary" 
-                                        title="Редактировать"
-                                        onclick="event.stopPropagation();">
-                                            <i class="fas fa-edit"></i>
-                                        </a>
-                                        <a href="{% url 'orders:order_detail' order.pk %}" 
-                                        class="btn btn-sm btn-outline-secondary" 
-                                        title="Открыть"
-                                        onclick="event.stopPropagation();">
-                                            <i class="fas fa-eye"></i>
-                                        </a>
-                                        {% if is_admin %}
-                                            <a href="{% url 'orders:order_delete' order.pk %}" 
-                                            class="btn btn-sm btn-outline-danger" 
-                                            title="Удалить"
-                                            onclick="event.stopPropagation();">
-                                                <i class="fas fa-trash"></i>
-                                            </a>
-                                        {% endif %}
-                                    {% endif %}
-                                </td>
-                            {% endif %}
+                                {% if is_admin %}
+                                    <a href="{% url 'orders:order_delete' order.pk %}" 
+                                    class="btn btn-sm btn-outline-danger" 
+                                    title="Удалить"
+                                    onclick="event.stopPropagation();">
+                                        <i class="fas fa-trash"></i>
+                                    </a>
+                                {% endif %}
+                            </td>
+                        {% endif %}
                         </td>
                     </tr>
                     {% empty %}

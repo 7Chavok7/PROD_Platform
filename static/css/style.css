@@ -795,3 +795,120 @@ body {
         font-size: 0.55rem;
     }
 }
+/* =========================================================
+   TOAST УВЕДОМЛЕНИЯ (ВМЕСТО ALERT)
+   ========================================================= */
+.custom-toast {
+    position: fixed;
+    top: 80px;
+    right: 24px;
+    z-index: 9999;
+    min-width: 300px;
+    max-width: 450px;
+    padding: 14px 20px;
+    border-radius: 12px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    transform: translateX(120%);
+    opacity: 0;
+    transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+        opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    font-size: 0.95rem;
+    font-weight: 500;
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.custom-toast.show {
+    transform: translateX(0);
+    opacity: 1;
+}
+
+.custom-toast .toast-content {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex: 1;
+}
+
+.custom-toast .toast-content i {
+    font-size: 1.2rem;
+    flex-shrink: 0;
+}
+
+.custom-toast .toast-close {
+    background: none;
+    border: none;
+    font-size: 1.3rem;
+    cursor: pointer;
+    opacity: 0.6;
+    transition: opacity 0.2s;
+    padding: 0 4px;
+    color: inherit;
+}
+
+.custom-toast .toast-close:hover {
+    opacity: 1;
+}
+
+/* Цвета toast */
+.custom-toast.toast-success {
+    background: linear-gradient(135deg, #d1e7dd, #b7d9c8);
+    color: #0a3622;
+    border-color: #a3cfb5;
+}
+
+.custom-toast.toast-success i {
+    color: #198754;
+}
+
+.custom-toast.toast-error {
+    background: linear-gradient(135deg, #f8d7da, #f5c6cb);
+    color: #58151c;
+    border-color: #f1aeb5;
+}
+
+.custom-toast.toast-error i {
+    color: #dc3545;
+}
+
+.custom-toast.toast-warning {
+    background: linear-gradient(135deg, #fff3cd, #ffeaa7);
+    color: #664d03;
+    border-color: #ffd970;
+}
+
+.custom-toast.toast-warning i {
+    color: #ffc107;
+}
+
+.custom-toast.toast-info {
+    background: linear-gradient(135deg, #cfe2ff, #b6d4fe);
+    color: #052c65;
+    border-color: #9ec5fe;
+}
+
+.custom-toast.toast-info i {
+    color: #0d6efd;
+}
+
+/* Множество уведомлений (стек) */
+.custom-toast+.custom-toast {
+    margin-top: 12px;
+}
+
+/* Адаптивность для мобильных */
+@media (max-width: 576px) {
+    .custom-toast {
+        top: 70px;
+        right: 12px;
+        left: 12px;
+        min-width: unset;
+        max-width: unset;
+        padding: 12px 16px;
+        font-size: 0.85rem;
+    }
+}

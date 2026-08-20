@@ -969,7 +969,7 @@ def order_detail(request, pk):
         'order': order,
         'progress': progress,
         'completed_count': completed_count,
-        'gantt_data': json.dump(gantt_data),    # Передаем в JSON
+        'gantt_data': json.dumps(gantt_data),    # Передаем в JSON
         'active_menu': 'orders',
         'title': f'{order.number} — {order.name}',
         'is_admin': request.user.is_superuser or request.user.role in ['admin', 'director'],
