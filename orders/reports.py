@@ -13,50 +13,38 @@ class CustomerReports:
     def get_customer_orders_summary(start_date=None, end_date=None):
         """
         Отчет «Заказы по заказчикам»
-        Возвращает сводку по каждому заказчику:
-        - Количество заказов
-        - Сумма плановых часов
-        - Средняя задержка
-        - Количество выполненных в срок
-        - Процент выполнения в срок
         """
-        # Базовый запрос
         orders = Order.objects.filter(is_deleted=False)
         
-        # Фильтр по дате
         if start_date:
             orders = orders.filter(created_at__date__gte=start_date)
         if end_date:
             orders = orders.filter(created_at__date__lte=end_date)
         
-        # ✅ ИСПРАВЛЕНО: добавляем output_field для суммы
-        from django.db.models import DecimalField
-        
-        # Группируем по заказчику
         summary = orders.values(
             'customer_id', 
             'customer__name',
             'customer__short_name',
         ).annotate(
-            total_orders=Count('id'),
-            total_planned_hours=Coalesce(
-                Sum('stages__planned_hours', output_field=DecimalField(max_digits=10, decimal_places=2)),
-                Value(0, output_field=DecimalField(max_digits=10, decimal_places=2))
-            ),
-            completed_orders=Count('id', filter=Q(status=Order.Status.COMPLETED)),
+            total_orders=Count('id', distinct=True),
+            completed_orders=Count('id', filter=Q(status=Order.Status.COMPLETED), distinct=True),
             overdue_orders=Count('id', filter=Q(
                 status=Order.Status.IN_PROGRESS,
                 planned_completion_date__lt=timezone.now().date()
-            )),
+            ), distinct=True),
         ).order_by('-total_orders')
         
-        # Добавляем расчетные поля
         result = []
         for item in summary:
-            # ✅ ИСПРАВЛЕНО: completion_orders → completed_orders
-            completion_rate = int((item['completed_orders'] / item['total_orders'] * 100)) if item['total_orders'] > 0 else 0
+            customer_orders = orders.filter(customer_id=item['customer_id'])
+            total_hours = customer_orders.aggregate(
+                total=Coalesce(
+                    Sum('stages__planned_hours', output_field=DecimalField(max_digits=10, decimal_places=2)),
+                    Value(0, output_field=DecimalField(max_digits=10, decimal_places=2))
+                )
+            )['total']
             
-            # Расчет средней задержки (только для выполненных заказов)
+            # Расчет средней задержки
             avg_delay = Order.objects.filter(
                 customer_id=item['customer_id'],
                 status=Order.Status.COMPLETED,
@@ -70,6 +58,7 @@ class CustomerReports:
             )['avg_delay']
             
             avg_delay_days = avg_delay.days if avg_delay else 0
+            completion_rate = int((item['completed_orders'] / item['total_orders'] * 100)) if item['total_orders'] > 0 else 0
             
             result.append({
                 'customer_id': item['customer_id'],
@@ -78,7 +67,7 @@ class CustomerReports:
                 'total_orders': item['total_orders'],
                 'completed_orders': item['completed_orders'],
                 'overdue_orders': item['overdue_orders'],
-                'total_planned_hours': float(item['total_planned_hours']),
+                'total_planned_hours': float(total_hours) if total_hours else 0,
                 'completion_rate': completion_rate,
                 'avg_delay_days': avg_delay_days,
             })
@@ -87,19 +76,9 @@ class CustomerReports:
     
     @staticmethod
     def get_customer_reliability(start_date=None, end_date=None):
-        """
-        Отчет «Надежность заказчика»
-        Возвращает рейтинг заказчиков по надежности:
-        - Процент заказов, выполненных в срок
-        - Средняя задержка
-        - Количество просроченных заказов
-        """
         summary = CustomerReports.get_customer_orders_summary(start_date, end_date)
-        
-        # Сортируем по надежности (проценту выполнения)
         reliability = sorted(summary, key=lambda x: x['completion_rate'], reverse=True)
         
-        # Добавляем рейтинг
         for idx, item in enumerate(reliability, 1):
             item['rating'] = idx
             if item['completion_rate'] >= 90:
@@ -118,7 +97,6 @@ class CustomerReports:
     def get_customer_detail(customer_id):
         """
         Детальный отчет по конкретному заказчику
-        Возвращает список всех заказов заказчика с деталями
         """
         orders = Order.objects.filter(
             customer_id=customer_id,
@@ -133,14 +111,12 @@ class CustomerReports:
             total_stages = order.stages.count()
             completed_stages = order.stages.filter(status=Stage.Status.COMPLETED).count()
             
-            # Проверка на просрочку
             is_overdue = (
                 order.status == Order.Status.IN_PROGRESS and
                 order.planned_completion_date and
                 order.planned_completion_date < timezone.now().date()
             )
             
-            # Фактическая задержка (если выполнен)
             delay_days = None
             if order.status == Order.Status.COMPLETED and order.actual_completion_date and order.planned_completion_date:
                 delay = order.actual_completion_date - order.planned_completion_date

@@ -36,13 +36,13 @@
 </div>
 
 <!-- ============================================================ -->
-<!-- ИНФОРМАЦИЯ О ЗАКАЗЧИКЕ                                       -->
+<!-- ИНФОРМАЦИЯ О ЗАКАЗЧИКЕ - ИСПРАВЛЕНО                         -->
 <!-- ============================================================ -->
 <div class="row g-3 mb-4">
     <div class="col-md-3">
         <div class="card bg-primary text-white">
             <div class="card-body text-center">
-                <h3 class="mb-0">{{ report_data|length }}</h3>
+                <h3 class="mb-0">{{ total_orders }}</h3>
                 <small>Всего заказов</small>
             </div>
         </div>
@@ -50,17 +50,7 @@
     <div class="col-md-3">
         <div class="card bg-success text-white">
             <div class="card-body text-center">
-                <h3 class="mb-0">
-                    {% with completed=0 %}
-                        {% for item in report_data %}
-                            {% if item.order.status == 'completed' %}
-                                {% with completed=completed|add:1 %}
-                                {% endwith %}
-                            {% endif %}
-                        {% endfor %}
-                        {{ completed }}
-                    {% endwith %}
-                </h3>
+                <h3 class="mb-0">{{ completed_orders }}</h3>
                 <small>Выполнено</small>
             </div>
         </div>
@@ -68,17 +58,7 @@
     <div class="col-md-3">
         <div class="card bg-danger text-white">
             <div class="card-body text-center">
-                <h3 class="mb-0">
-                    {% with overdue=0 %}
-                        {% for item in report_data %}
-                            {% if item.is_overdue %}
-                                {% with overdue=overdue|add:1 %}
-                                {% endwith %}
-                            {% endif %}
-                        {% endfor %}
-                        {{ overdue }}
-                    {% endwith %}
-                </h3>
+                <h3 class="mb-0">{{ overdue_orders }}</h3>
                 <small>Просрочено</small>
             </div>
         </div>
@@ -86,21 +66,7 @@
     <div class="col-md-3">
         <div class="card bg-info text-white">
             <div class="card-body text-center">
-                <h3 class="mb-0">
-                    {% with total_delay=0 count=0 %}
-                        {% for item in report_data %}
-                            {% if item.delay_days is not None %}
-                                {% with total_delay=total_delay|add:item.delay_days count=count|add:1 %}
-                                {% endwith %}
-                            {% endif %}
-                        {% endfor %}
-                        {% if count > 0 %}
-                            {{ total_delay|floatformat:1 }}
-                        {% else %}
-                            0
-                        {% endif %}
-                    {% endwith %}
-                </h3>
+                <h3 class="mb-0">{{ avg_delay|floatformat:1 }}</h3>
                 <small>Ср. задержка (дн.)</small>
             </div>
         </div>

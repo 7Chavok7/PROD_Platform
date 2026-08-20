@@ -1486,3 +1486,33 @@ def customer_detail_report(request, pk):
         'title': f'Заказы заказчика: {customer.name}',
     }
     return render(request, 'orders/reports/customer_order_list.html', context)
+
+# orders/views.py
+@login_required
+@user_passes_test(is_manager)
+def customer_detail_report(request, pk):
+    from .reports import CustomerReports
+    from customers.models import Customer
+    
+    customer = get_object_or_404(Customer, pk=pk)
+    report_data = CustomerReports.get_customer_detail(pk)
+    
+    # ✅ Считаем статистику в Python
+    total = len(report_data)
+    completed = sum(1 for item in report_data if item['order'].status == Order.Status.COMPLETED)
+    overdue = sum(1 for item in report_data if item['is_overdue'])
+    
+    delay_values = [item['delay_days'] for item in report_data if item['delay_days'] is not None]
+    avg_delay = sum(delay_values) / len(delay_values) if delay_values else 0
+    
+    context = {
+        'customer': customer,
+        'report_data': report_data,
+        'total_orders': total,
+        'completed_orders': completed,
+        'overdue_orders': overdue,
+        'avg_delay': avg_delay,
+        'active_menu': 'customer_orders_report',
+        'title': f'Заказы заказчика: {customer.name}',
+    }
+    return render(request, 'orders/reports/customer_order_list.html', context)
